@@ -16,7 +16,7 @@ else
 fi
 
 echo "docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile"
-#docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile
+docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile
 echo "docker tag ${TAG}:${VERSION} ${TAG}:${LATEST}"
-#docker tag ${TAG}:${VERSION} ${TAG}:${LATEST}
+docker tag ${TAG}:${VERSION} ${TAG}:${LATEST}
 

@@ -26,8 +26,8 @@ RUN \
 
 ENV PATH=$VENV/bin:$PATH
 
-COPY docker/entrypoint.sh /tmp/
-RUN chmod +x /tmp/entrypoint.sh
-ENTRYPOINT ["/tmp/entrypoint.sh"]
+#COPY docker/entrypoint.sh /tmp/
+#RUN chmod +x /tmp/entrypoint.sh
+#ENTRYPOINT ["/tmp/entrypoint.sh"]
 
 CMD /bin/bash
