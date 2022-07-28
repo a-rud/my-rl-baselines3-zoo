@@ -12,6 +12,7 @@ else
   LATEST="${LATEST}-cpu"
   PARENT="${PARENT}:${LATEST}"
   #TAG="${TAG}-cpu" # tag must always be the same since using only one repo
+  # Mark the images as CPU via versions
   VERSION="${VERSION}-cpu"
 fi
 

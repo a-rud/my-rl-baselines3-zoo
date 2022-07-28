@@ -30,4 +30,8 @@ ENV PATH=$VENV/bin:$PATH
 #RUN chmod +x /tmp/entrypoint.sh
 #ENTRYPOINT ["/tmp/entrypoint.sh"]
 
+COPY hyperparams/ ${CODE_DIR}/rl_zoo/hyperparams/
+COPY utils/ ${CODE_DIR}/rl_zoo/utils/
+COPY train.py ${CODE_DIR}/rl_zoo/train.py
+
 CMD /bin/bash
