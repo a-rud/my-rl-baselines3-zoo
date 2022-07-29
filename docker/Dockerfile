@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ARG PARENT_IMAGE
 ARG USE_GPU
 FROM $PARENT_IMAGE
