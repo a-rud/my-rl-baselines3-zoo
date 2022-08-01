@@ -8,6 +8,7 @@
 - Upgrade to Stable-Baselines3 (SB3) >= 1.5.1a7
 - Upgrade to sb3-contrib >= 1.5.1a7
 - Upgraded to gym 0.24
+- Upgrade to panda-gym >= 2.0.2 (@qgallouedec)
 
 ### New Features
 - Support setting PyTorch's device with thye `--device` flag (@gregwar)
