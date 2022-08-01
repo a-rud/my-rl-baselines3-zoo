@@ -1,21 +1,23 @@
 #!/bin/bash
 
-PARENT=stablebaselines/stable-baselines3
+PARENT=arudl/my-stable-baselines3
 
-TAG=stablebaselines/rl-baselines3-zoo
-VERSION=1.4.1a0
+TAG=arudl/my-rl-baselines3-zoo
+LATEST=latest
+VERSION=$(cat version.txt)  # version of RL Zoo
 
 if [[ ${USE_GPU} == "True" ]]; then
-  PARENT="${PARENT}:${VERSION}"
+  PARENT="${PARENT}:${LATEST}"
 else
-  PARENT="${PARENT}-cpu:${VERSION}"
-  TAG="${TAG}-cpu"
+  LATEST="${LATEST}-cpu"
+  PARENT="${PARENT}:${LATEST}"
+  #TAG="${TAG}-cpu" # tag must always be the same since using only one repo
+  # Mark the images as CPU via versions
+  VERSION="${VERSION}-cpu"
 fi
 
-docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} -t ${TAG}:${VERSION} . -f docker/Dockerfile
-docker tag ${TAG}:${VERSION} ${TAG}:latest
+echo "docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile"
+docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile
+echo "docker tag ${TAG}:${VERSION} ${TAG}:${LATEST}"
+docker tag ${TAG}:${VERSION} ${TAG}:${LATEST}
 
-if [[ ${RELEASE} == "True" ]]; then
-  docker push ${TAG}:${VERSION}
-  docker push ${TAG}:latest
-fi
