@@ -1,10 +1,32 @@
-gym==0.24.1
-# stable-baselines3[extra,tests,docs]>=1.5.1a7
+#############################
+############ GYM ############
+#gym==0.24.1 # original
+gym==0.24 # to be compatible with panda-gym
+#############################
+############ SB3 ############
+# PIP INSTALL
+stable-baselines3[extra,tests,docs]>=1.5.1a7
+# ORIGINAL
 #git+https://github.com/carlosluis/stable-baselines3@fix_tests#egg=stable_baselines3[extra,tests,docs]
-git+https://github.com/a-rud/my-stable-baselines3@newest-gym-version#egg=stable_baselines3[extra,tests,docs]
-# sb3-contrib>=1.5.0
-#git+https://github.com/Stable-Baselines-Team/stable-baselines3-contrib@feat/new-gym-version
-git+https://github.com/a-rud/my-stable-baselines3-contrib@feat/new-gym-version
+# FOR DOCKER INSTALL
+#git+https://github.com/a-rud/my-stable-baselines3@newest-gym-version#egg=stable_baselines3[extra,tests,docs]
+#####################################
+############ SB3-CONTRIB ############
+# PIP INSTALL
+sb3-contrib>=1.5.0
+# ORIGINAL
+#git+https://github.com/Stable-Baselines-Team/stable-baselines3-contrib@feat/new-gym-version#egg=sb3_contrib
+# FOR DOCKER INSTALL
+#git+https://github.com/a-rud/my-stable-baselines3-contrib@feat/new-gym-version#egg=sb3_contrib
+###################################
+############ PANDA-GYM ############
+# PIP INSTALL
+panda-gym~=2.0.2 # original
+#panda-gym==2.0.2 # this release does not require gym<=0.23
+# FOR DOCKER INSTALL
+#git+https://github.com/a-rud/my-panda-gym@my-gym-0.24#egg=panda_gym[extra]
+##############################
+############ REST ############
 box2d-py==2.3.8
 pybullet
 gym-minigrid
@@ -15,8 +37,6 @@ seaborn~=0.11.2
 pyyaml>=5.1
 cloudpickle>=1.5.0
 plotly
-#panda-gym~=2.0.2
-panda-gym==2.0.2
 rliable>=1.0.5
 wandb
 ale-py==0.7.5
