@@ -207,7 +207,7 @@ FetchSlide-v1:
 FetchPickAndPlace-v1:
   <<: *her-defaults
 
-PandaReach-v1:
+PandaReach-v1: &panda-reach
   env_wrapper: sb3_contrib.common.wrappers.TimeFeatureWrapper
   n_timesteps: !!float 20000
   policy: 'MultiInputPolicy'
@@ -237,6 +237,22 @@ PandaPickAndPlace-v1:
   <<: *her-defaults
 
 PandaStack-v1:
+  <<: *her-defaults
+
+PandaReach-v2:
+  <<: *panda-reach
+
+PandaPush-v2:
+  <<: *her-defaults
+
+PandaSlide-v2:
+  <<: *her-defaults
+  n_timesteps: !!float 3e6
+
+PandaPickAndPlace-v2:
+  <<: *her-defaults
+
+PandaStack-v2:
   <<: *her-defaults
 
 parking-v0:
