@@ -25,7 +25,7 @@ parser.add_argument("-y", "--y-axis", help="Y-axis", choices=["success", "reward
                     default="reward")
 parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=100)
 parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
-parser.add_argument("--show_all_experiments",
+parser.add_argument("--show-all-experiments",
                     help="Flag to show graphs for ALL experiments of this algo and experiment. "
                          "As a default, only the last run is shown.",
                     dest='show_all', default=False, action='store_true')
