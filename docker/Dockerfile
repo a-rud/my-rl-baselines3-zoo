@@ -27,12 +27,9 @@ RUN \
 
 ENV PATH=$VENV/bin:$PATH
 
-#COPY docker/entrypoint.sh /tmp/
-#RUN chmod +x /tmp/entrypoint.sh
-#ENTRYPOINT ["/tmp/entrypoint.sh"]
-
-COPY hyperparams/ ${CODE_DIR}/rl_zoo/hyperparams/
 COPY utils/ ${CODE_DIR}/rl_zoo/utils/
 COPY train.py ${CODE_DIR}/rl_zoo/train.py
+COPY scripts/ ${CODE_DIR}/rl_zoo/scripts/
+COPY hyperparams/ ${CODE_DIR}/rl_zoo/hyperparams/
 
 CMD /bin/bash
