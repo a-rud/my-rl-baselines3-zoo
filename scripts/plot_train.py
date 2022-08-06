@@ -21,11 +21,17 @@ parser.add_argument("--figsize", help="Figure size, width, height in inches.", n
 parser.add_argument("--fontsize", help="Font size", type=int, default=14)
 parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int)
 parser.add_argument("-x", "--x-axis", help="X-axis", choices=["steps", "episodes", "time"], type=str, default="steps")
-parser.add_argument("-y", "--y-axis", help="Y-axis", choices=["success", "reward", "length"], type=str, default="reward")
+parser.add_argument("-y", "--y-axis", help="Y-axis", choices=["success", "reward", "length"], type=str,
+                    default="reward")
 parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=100)
+parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
+parser.add_argument("--show_all_experiments",
+                    help="Flag to show graphs for ALL experiments of this algo and experiment. "
+                         "As a default, only the last run is shown.",
+                    dest='show_all', default=False, action='store_true')
+parser.add_argument("-s", "--show", help="Flag whether to show plot or not.", default=False, action='store_true')
 
 args = parser.parse_args()
-
 
 algo = args.algo
 envs = args.env
@@ -64,6 +70,10 @@ for env in envs:
         ]
     )
 
+# only plot the last experiment
+if not args.show_all:
+    dirs = [sorted(dirs)[-1]]
+
 plt.figure(y_label, figsize=args.figsize)
 plt.title(y_label, fontsize=args.fontsize)
 plt.xlabel(f"{x_label}", fontsize=args.fontsize)
@@ -90,4 +100,15 @@ for folder in dirs:
 
 plt.legend()
 plt.tight_layout()
-plt.show()
+
+store_path = args.target_folder
+if store_path is not None:
+    if os.path.isdir(store_path):
+        figure = os.path.join(store_path, f"training_{args.y_axis}")
+        plt.savefig(figure)
+        print(f"Saved figure {figure}")
+    else:
+        print(f"Target path does not exist: {store_path}")
+
+if args.show:
+    plt.show()
