@@ -56,9 +56,9 @@ if args.labels is None:
     args.labels = ""
 
 y_label = {
-    "successes": "Success Rate",
-    "results": "Episodic Reward",
-    "ep_lengths": "Training Episode Length",
+    "successes": "Eval Success Rate",
+    "results": "Eval Episodic Reward",
+    "ep_lengths": "Eval Training Episode Length",
 }[args.key]
 fig_suffix = {
     "successes": "success",
@@ -95,7 +95,7 @@ for env in args.env:  # noqa: C901
 
             # only plot the last experiment
             if not args.show_all:
-                dirs = [sorted(dirs)[0]]
+                dirs = [sorted(dirs)[-1]]
 
             max_len = 0
             merged_timesteps, merged_results = [], []
