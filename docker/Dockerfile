@@ -29,7 +29,7 @@ ENV PATH=$VENV/bin:$PATH
 
 COPY utils/ ${CODE_DIR}/rl_zoo/utils/
 COPY train.py ${CODE_DIR}/rl_zoo/train.py
-COPY scripts/ ${CODE_DIR}/rl_zoo/scripts/
 COPY hyperparams/ ${CODE_DIR}/rl_zoo/hyperparams/
+COPY scripts/ ${CODE_DIR}/rl_zoo/scripts/
 
 CMD /bin/bash

@@ -9,22 +9,27 @@ import seaborn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance_matrix
 
+from stable_baselines3.common.results_plotter import window_func
+
 parser = argparse.ArgumentParser("Gather results, plot them and create table")
 parser.add_argument("-a", "--algos", help="Algorithms to include", nargs="+", type=str)
 parser.add_argument("-e", "--env", help="Environments to include", nargs="+", type=str)
 parser.add_argument("-f", "--exp-folders", help="Folders to include", nargs="+", type=str)
 parser.add_argument("-l", "--labels", help="Label for each folder", nargs="+", type=str)
+parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
 parser.add_argument(
     "-k",
     "--key",
     help="Key from the `evaluations.npz` file to use to aggregate results "
-    "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
+         "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
     default="results",
     type=str,
 )
-parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(2e6))
+parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(3e6))
 parser.add_argument("-min", "--min-timesteps", help="Min number of timesteps to keep a trial", type=int, default=-1)
-parser.add_argument("-o", "--output", help="Output filename (pickle file), where to save the post-processed data", type=str)
+parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=None)
+parser.add_argument("-o", "--output", help="Output filename (pickle file), where to save the post-processed data",
+                    type=str)
 parser.add_argument(
     "-median", "--median", action="store_true", default=False, help="Display median instead of mean in the table"
 )
@@ -34,6 +39,13 @@ parser.add_argument(
     "-print", "--print-n-trials", action="store_true", default=False, help="Print the number of trial for each result"
 )
 args = parser.parse_args()
+
+if "success" in args.key:
+    args.key = "successes"
+elif "reward" in args.key:
+    args.key = "results"
+elif "length" in args.key:
+    args.key = "ep_lengths"
 
 # Activate seaborn
 seaborn.set()
@@ -45,13 +57,24 @@ args.algos = [algo.upper() for algo in args.algos]
 if args.labels is None:
     args.labels = args.exp_folders
 
+y_label = {
+    "successes": "Eval Success Rate",
+    "results": "Eval Episodic Reward",
+    "ep_lengths": "Eval Training Episode Length",
+}[args.key]
+fig_suffix = {
+    "successes": "success",
+    "results": "reward",
+    "ep_lengths": "length",
+}[args.key]
+
 for env in args.env:  # noqa: C901
     plt.figure(f"Results {env}")
     plt.title(f"{env}", fontsize=14)
 
     x_label_suffix = "" if args.no_million else "(in Million)"
     plt.xlabel(f"Timesteps {x_label_suffix}", fontsize=14)
-    plt.ylabel("Score", fontsize=14)
+    plt.ylabel(y_label, fontsize=14)
     results[env] = {}
     post_processed_results[env] = {}
 
@@ -61,6 +84,7 @@ for env in args.env:  # noqa: C901
             log_path = os.path.join(exp_folder, algo.lower())
 
             if not os.path.isdir(log_path):
+                print(f"{log_path} is not a directory. Continuing.")
                 continue
 
             results[env][f"{args.labels[folder_idx]}-{algo}"] = 0.0
@@ -198,11 +222,32 @@ for env in args.env:  # noqa: C901
                     "mean_per_eval": mean_per_eval,
                 }
 
-                plt.plot(timesteps / divider, mean_, label=f"{algo}-{args.labels[folder_idx]}", linewidth=3)
+                plot_label = f"{algo}"
+                if f"{args.labels[folder_idx]}":
+                    plot_label += f"-{args.labels[folder_idx]}"
+
+                plt.plot(timesteps / divider, mean_, label=plot_label, linewidth=3)
                 plt.fill_between(timesteps / divider, mean_ + std_error, mean_ - std_error, alpha=0.5)
 
-    plt.legend()
+                # Smooth the curves:
+                if args.episode_window is not None:
+                    # Do not plot the smoothed curve at all if the timeseries is shorter than window size.
+                    if timesteps.shape[0] >= args.episode_window:
+                        # Copy to not impact the variables
+                        timesteps_smooth = timesteps.copy()
+                        mean_smooth = mean_.copy()
+                        std_error_smooth = std_error.copy()
+                        # Compute and plot rolling mean with window of size args.episode_window
+                        timesteps_smooth, mean_smooth = window_func(timesteps_smooth, mean_smooth, args.episode_window,
+                                                                    np.mean)
+                        _, std_error_smooth = window_func(timesteps, std_error_smooth, args.episode_window,
+                                                          np.mean)
+                        # plt.plot(timesteps_smooth, y_mean, linewidth=2, label=folder.split("/")[-1])
+                        plt.plot(timesteps_smooth / divider, mean_smooth, label=f"{plot_label} smoothed", linewidth=2)
+                        plt.fill_between(timesteps_smooth / divider, mean_smooth + std_error_smooth,
+                                         mean_smooth - std_error_smooth, alpha=0.5)
 
+    plt.legend()
 
 # Markdown Table
 writer = pytablewriter.MarkdownTableWriter(max_precision=3)
@@ -239,6 +284,15 @@ if args.output is not None:
     print(f"Saving to {args.output}.pkl")
     with open(f"{args.output}.pkl", "wb") as file_handler:
         pickle.dump(post_processed_results, file_handler)
+
+store_path = args.target_folder
+if store_path is not None:
+    if os.path.isdir(store_path):
+        figure = os.path.join(store_path, f"all_plots_eval_{fig_suffix}")
+        plt.savefig(figure)
+        print(f"Saved figure {figure}")
+    else:
+        print(f"Target path does not exist: {store_path}")
 
 if not args.no_display:
     plt.show()

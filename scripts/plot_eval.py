@@ -9,6 +9,8 @@ import seaborn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance_matrix
 
+from stable_baselines3.common.results_plotter import window_func
+
 parser = argparse.ArgumentParser("Gather results, plot them and create table")
 parser.add_argument("-a", "--algos", help="Algorithms to include", nargs="+", type=str)
 parser.add_argument("-e", "--env", help="Environments to include", nargs="+", type=str)
@@ -20,8 +22,9 @@ parser.add_argument(
                         "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
     default="results", type=str,
 )
-parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(2e6))
+parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(3e6))
 parser.add_argument("-min", "--min-timesteps", help="Min number of timesteps to keep a trial", type=int, default=-1)
+parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=None)
 parser.add_argument("-o", "--output", help="Output filename (pickle file), where to save the post-processed data",
                     type=str)
 parser.add_argument(
@@ -230,6 +233,24 @@ for env in args.env:  # noqa: C901
 
                 plt.plot(timesteps / divider, mean_, label=plot_label, linewidth=3)
                 plt.fill_between(timesteps / divider, mean_ + std_error, mean_ - std_error, alpha=0.5)
+
+                # Smooth the curves:
+                if args.episode_window is not None:
+                    # Do not plot the smoothed curve at all if the timeseries is shorter than window size.
+                    if timesteps.shape[0] >= args.episode_window:
+                        # Copy to not impact the variables
+                        timesteps_smooth = timesteps.copy()
+                        mean_smooth = mean_.copy()
+                        std_error_smooth = std_error.copy()
+                        # Compute and plot rolling mean with window of size args.episode_window
+                        timesteps_smooth, mean_smooth = window_func(timesteps_smooth, mean_smooth, args.episode_window,
+                                                                    np.mean)
+                        _, std_error_smooth = window_func(timesteps, std_error_smooth, args.episode_window,
+                                                                    np.mean)
+                        # plt.plot(timesteps_smooth, y_mean, linewidth=2, label=folder.split("/")[-1])
+                        plt.plot(timesteps_smooth / divider, mean_smooth, label=f"{plot_label} smoothed", linewidth=2)
+                        plt.fill_between(timesteps_smooth / divider, mean_smooth + std_error_smooth,
+                                         mean_smooth - std_error_smooth, alpha=0.5)
 
     plt.legend()
 
