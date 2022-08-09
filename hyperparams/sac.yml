@@ -312,6 +312,7 @@ PandaFlipDense-v2:
 ################### JOINT CONTROL, SPARSE ###############################
 PandaReachJoints-v2:
   <<: *panda-reach
+  n_timesteps: !!float 2e5
 
 PandaPushJoints-v2:
   <<: *her-defaults
@@ -335,6 +336,7 @@ PandaFlipJoints-v2:
 ################### JOINT CONTROL, DENSE ###############################
 PandaReachJointsDense-v2:
   <<: *panda-reach
+  n_timesteps: !!float 2e5
 
 PandaPushJointsDense-v2:
   <<: *her-defaults
