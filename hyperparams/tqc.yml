@@ -238,6 +238,7 @@ PandaSlide-v1:
 
 PandaPickAndPlace-v1:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStack-v1:
   <<: *her-defaults
@@ -256,6 +257,7 @@ PandaSlide-v2:
 
 PandaPickAndPlace-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStack-v2:
   <<: *her-defaults
@@ -274,6 +276,7 @@ PandaSlideDense-v2:
 
 PandaPickAndPlaceDense-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStackDense-v2:
   <<: *her-defaults
@@ -292,6 +295,7 @@ PandaSlideJoints-v2:
 
 PandaPickAndPlaceJoints-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStackJoints-v2:
   <<: *her-defaults
