@@ -209,7 +209,8 @@ FetchPickAndPlace-v1:
 
 
 ######################################################################
-################### VERSION ONE: EE CONTROL, SPARSE ##################
+################### !!! VERSION 1 !!! ################################
+################### EE CONTROL, SPARSE ###############################
 PandaReach-v1: &panda-reach
   env_wrapper: sb3_contrib.common.wrappers.TimeFeatureWrapper
   n_timesteps: !!float 20000
@@ -238,6 +239,7 @@ PandaSlide-v1:
 
 PandaPickAndPlace-v1:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStack-v1:
   <<: *her-defaults
@@ -256,6 +258,7 @@ PandaSlide-v2:
 
 PandaPickAndPlace-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStack-v2:
   <<: *her-defaults
@@ -274,6 +277,7 @@ PandaSlideDense-v2:
 
 PandaPickAndPlaceDense-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStackDense-v2:
   <<: *her-defaults
@@ -282,6 +286,7 @@ PandaStackDense-v2:
 ################### JOINT CONTROL, SPARSE ############################
 PandaReachJoints-v2:
   <<: *panda-reach
+  n_timesteps: !!float 2e5
 
 PandaPushJoints-v2:
   <<: *her-defaults
@@ -292,6 +297,7 @@ PandaSlideJoints-v2:
 
 PandaPickAndPlaceJoints-v2:
   <<: *her-defaults
+  n_timesteps: !!float 2e6
 
 PandaStackJoints-v2:
   <<: *her-defaults
@@ -300,6 +306,7 @@ PandaStackJoints-v2:
 ################### JOINT CONTROL, DENSE #############################
 PandaReachJointsDense-v2:
   <<: *panda-reach
+  n_timesteps: !!float 2e5
 
 PandaPushJointsDense-v2:
   <<: *her-defaults
