@@ -35,6 +35,7 @@ parser.add_argument("--no-display", action="store_true", default=False, help="Do
 parser.add_argument(
     "-print", "--print-n-trials", action="store_true", default=False, help="Print the number of trial for each result"
 )
+parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Control verbosity")
 args = parser.parse_args()
 
 if "success" in args.key:
@@ -67,7 +68,7 @@ fig_suffix = {
 
 for env in args.env:  # noqa: C901
     plt.figure(f"Results {env}")
-    plt.title(f"{env}", fontsize=14)
+    plt.title(f"{env} all plots", fontsize=14)
 
     x_label_suffix = "" if args.no_million else "(in Million)"
     plt.xlabel(f"Timesteps {x_label_suffix}", fontsize=14)
@@ -108,6 +109,9 @@ for env in args.env:  # noqa: C901
                 if mean_.shape == ():
                     continue
 
+                if args.verbose:
+                    print(f"#{len(merged_results)+1}: Using data from directory {dir_}")
+
                 max_len = max(max_len, len(mean_))
                 if len(log["timesteps"]) >= max_len:
                     timesteps = log["timesteps"]
@@ -133,7 +137,7 @@ for env in args.env:  # noqa: C901
             min_trials = []
             if args.min_timesteps > 0:
                 min_ = np.inf
-                for n_timesteps in merged_timesteps:
+                for idx, n_timesteps in enumerate(merged_timesteps):
                     if n_timesteps[-1] >= args.min_timesteps:
                         min_ = min(min_, len(n_timesteps))
                         if len(n_timesteps) == min_:
@@ -142,6 +146,10 @@ for env in args.env:  # noqa: C901
                             while n_timesteps[max_len - 1] > args.max_timesteps:
                                 max_len -= 1
                             timesteps = n_timesteps[:max_len]
+                    else:
+                        if args.verbose:
+                            print(f"Discarding results #{idx+1} because it's shorter than args.min_timesteps.")
+
                 # Avoid modifying original aggregated results
                 merged_results_ = deepcopy(merged_results)
                 # Downsample if needed
@@ -165,6 +173,10 @@ for env in args.env:  # noqa: C901
                 if len(merged_results[idx]) >= max_len:
                     merged_results_tmp.append(merged_results[idx][:max_len])
                     last_eval_tmp.append(last_eval[idx])
+                else:
+                    if args.verbose:
+                        print(f"Dropping results #{idx+1} because it's shorter than max_len.")
+
             merged_results = merged_results_tmp
             last_eval = last_eval_tmp
 
@@ -176,7 +188,7 @@ for env in args.env:  # noqa: C901
                 n_eval = len(timesteps)
 
                 if args.print_n_trials:
-                    print(f"{env}-{algo}-{args.labels[folder_idx]}: {n_trials}")
+                    print(f"Number of trials in {env}-{algo}-{args.labels[folder_idx]}: {n_trials}")
 
                 # reshape to (n_trials, n_eval, n_eval_episodes)
                 evaluations = merged_results.reshape((n_trials, n_eval, -1))
@@ -230,6 +242,8 @@ for env in args.env:  # noqa: C901
                 if args.episode_window is not None:
                     # Do not plot the smoothed curve at all if the timeseries is shorter than window size.
                     if timesteps.shape[0] >= args.episode_window:
+                        if args.verbose:
+                            print(f"Applying smoothing window width {args.episode_window}.")
                         # Copy to not impact the variables
                         timesteps_smooth = timesteps.copy()
                         mean_smooth = mean_.copy()
@@ -240,7 +254,7 @@ for env in args.env:  # noqa: C901
                         _, std_error_smooth = window_func(timesteps, std_error_smooth, args.episode_window,
                                                           np.mean)
                         # plt.plot(timesteps_smooth, y_mean, linewidth=2, label=folder.split("/")[-1])
-                        plt.plot(timesteps_smooth / divider, mean_smooth, label=f"{plot_label} smoothed", linewidth=2)
+                        plt.plot(timesteps_smooth / divider, mean_smooth, label=f"{plot_label} smoothed", linewidth=3)
                         plt.fill_between(timesteps_smooth / divider, mean_smooth + std_error_smooth,
                                          mean_smooth - std_error_smooth, alpha=0.5)
 
@@ -278,18 +292,21 @@ writer.write_table()
 post_processed_results["results_table"] = {"headers": headers, "value_matrix": value_matrix}
 
 if args.output is not None:
-    print(f"Saving to {args.output}.pkl")
+    if args.verbose:
+        print(f"Saving to {args.output}.pkl")
     with open(f"{args.output}.pkl", "wb") as file_handler:
         pickle.dump(post_processed_results, file_handler)
 
 store_path = args.target_folder
 if store_path is not None:
     if os.path.isdir(store_path):
-        figure = os.path.join(store_path, f"all_plots_eval_{fig_suffix}")
+        figure = os.path.join(store_path, f"all_plots_{fig_suffix}")
         plt.savefig(figure)
-        print(f"Saved figure {figure}")
+        if args.verbose:
+            print(f"Saved figure {figure}")
     else:
-        print(f"Target path does not exist: {store_path}")
+        if args.verbose:
+            print(f"Target path does not exist: {store_path}")
 
 if not args.no_display:
     plt.show()
