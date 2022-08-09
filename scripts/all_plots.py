@@ -18,12 +18,9 @@ parser.add_argument("-f", "--exp-folders", help="Folders to include", nargs="+",
 parser.add_argument("-l", "--labels", help="Label for each folder", nargs="+", type=str)
 parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
 parser.add_argument(
-    "-k",
-    "--key",
-    help="Key from the `evaluations.npz` file to use to aggregate results "
-         "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
-    default="results",
-    type=str,
+    "-k", "--key", help="Key from the `evaluations.npz` file to use to aggregate results "
+                        "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
+    default="results", type=str,
 )
 parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(3e6))
 parser.add_argument("-min", "--min-timesteps", help="Min number of timesteps to keep a trial", type=int, default=-1)
