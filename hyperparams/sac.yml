@@ -262,6 +262,7 @@ PandaPush-v2: &her-defaults
   gamma: 0.95
   learning_rate: !!float 1e-3
   tau: 0.05
+  learning_starts: 1000
   replay_buffer_class: HerReplayBuffer
   replay_buffer_kwargs: "dict(
     online_sampling=True,
