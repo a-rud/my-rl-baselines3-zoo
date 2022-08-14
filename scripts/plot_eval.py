@@ -30,7 +30,7 @@ parser.add_argument("-o", "--output", help="Output filename (pickle file), where
 parser.add_argument(
     "-median", "--median", action="store_true", default=False, help="Display median instead of mean in the table"
 )
-parser.add_argument("--no-million", action="store_true", default=False, help="Do not convert x-axis to million")
+parser.add_argument("--no-divider", action="store_true", default=False, help="Do not convert x-axis scale.")
 parser.add_argument("--no-display", action="store_true", default=False, help="Do not show the plots")
 parser.add_argument(
     "-print", "--print-n-trials", action="store_true", default=False, help="Print the number of trial for each result"
@@ -74,7 +74,9 @@ for env in args.env:  # noqa: C901
     plt.figure(f"Results {env}")
     plt.title(f"{env}", fontsize=14)
 
-    x_label_suffix = "" if args.no_million else "(in Million)"
+    x_label_suffix = ""  # if args.no_million else "(in Million)"
+    if not args.no_divider:
+        plt.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     plt.xlabel(f"Timesteps {x_label_suffix}", fontsize=14)
     plt.ylabel(y_label, fontsize=14)
     results[env] = {}
@@ -118,7 +120,7 @@ for env in args.env:  # noqa: C901
                     continue
 
                 if args.verbose:
-                    print(f"#{len(merged_results)+1}: Using data from directory {dir_}")
+                    print(f"#{len(merged_results) + 1}: Using data from directory {dir_}")
 
                 max_len = max(max_len, len(mean_))
                 if len(log["timesteps"]) >= max_len:
@@ -156,7 +158,7 @@ for env in args.env:  # noqa: C901
                             timesteps = n_timesteps[:max_len]
                     else:
                         if args.verbose:
-                            print(f"Discarding results #{idx+1} because it's shorter than args.min_timesteps.")
+                            print(f"Discarding results #{idx + 1} because it's shorter than args.min_timesteps.")
 
                 # Avoid modifying original aggregated results
                 merged_results_ = deepcopy(merged_results)
@@ -183,7 +185,7 @@ for env in args.env:  # noqa: C901
                     last_eval_tmp.append(last_eval[idx])
                 else:
                     if args.verbose:
-                        print(f"Dropping results #{idx+1} because it's shorter than max_len.")
+                        print(f"Dropping results #{idx + 1} because it's shorter than max_len.")
 
             merged_results = merged_results_tmp
             last_eval = last_eval_tmp
@@ -225,10 +227,16 @@ for env in args.env:  # noqa: C901
                         f"{algo}-{args.labels[folder_idx]}"
                     ] = f"{np.mean(last_evals):.0f} +/- {std_error_last_eval:.0f}"
 
-                # x axis in Millions of timesteps
-                divider = 1e6
-                if args.no_million:
-                    divider = 1.0
+                # Convert x-axis timesteps scale with a 10**exp divider
+                divider = 1.0  # this is now done over matplotlib settings
+                # if args.no_divider:
+                #     divider = 1.0
+                # else:
+                #     T = timesteps[-1]
+                #     exp = 1
+                #     if T > 10:
+                #         exp = int(np.floor(np.log10(T)))
+                #     divider = float(10 ** exp)
 
                 post_processed_results[env][f"{algo}-{args.labels[folder_idx]}"] = {
                     "timesteps": timesteps,
@@ -260,7 +268,7 @@ for env in args.env:  # noqa: C901
                         timesteps_smooth, mean_smooth = window_func(timesteps_smooth, mean_smooth, args.episode_window,
                                                                     np.mean)
                         _, std_error_smooth = window_func(timesteps, std_error_smooth, args.episode_window,
-                                                                    np.mean)
+                                                          np.mean)
                         # plt.plot(timesteps_smooth, y_mean, linewidth=2, label=folder.split("/")[-1])
                         plt.plot(timesteps_smooth / divider, mean_smooth, label=f"{plot_label} smoothed", linewidth=3)
                         plt.fill_between(timesteps_smooth / divider, mean_smooth + std_error_smooth,
