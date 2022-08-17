@@ -5,6 +5,7 @@ FROM $PARENT_IMAGE
 
 RUN apt-get -y update \
     && apt-get -y install \
+    sysstat \
     ffmpeg \
     freeglut3-dev \
     swig \
