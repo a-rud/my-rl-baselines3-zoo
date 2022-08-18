@@ -32,5 +32,6 @@ COPY utils/ ${CODE_DIR}/rl_zoo/utils/
 COPY train.py ${CODE_DIR}/rl_zoo/train.py
 COPY hyperparams/ ${CODE_DIR}/rl_zoo/hyperparams/
 COPY scripts/ ${CODE_DIR}/rl_zoo/scripts/
+COPY run_multi_train.py ${CODE_DIR}/rl_zoo/run_multi_train.py
 
 CMD /bin/bash

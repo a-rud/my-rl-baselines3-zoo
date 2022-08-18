@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     delay = args.delay
     del args.delay
-    poll_period = args.poll_perdiod
+    poll_period = args.poll_period
     del args.poll_period
     assert isinstance(delay, float) and delay > 0, "Delay must be a positive float number."
     assert isinstance(poll_period, float) and poll_period > 0, "Poll period must be a positive float number."
@@ -77,7 +77,8 @@ if __name__ == "__main__":
         # otherwise use specified device
         else:
             device = args.device
-
+    sys.stdout.write(f"Using device '{device}' with {NUM_GPU} GPUs.")
+    sys.stdout.flush()
     # create a list of parsed arguments which are constant for all subprocesses.
     const_args = []
 
@@ -123,16 +124,19 @@ if __name__ == "__main__":
                 sys.stdout.write(40 * "+")
                 sys.stdout.write("\n")
                 sys.stdout.write(f"Starting process #{len(processes) + 1} ...\n")
+                sys.stdout.flush()
                 p = subprocess.Popen(["python", "train.py"] + cmd_args)
                 processes.append(p)
                 sys.stdout.write(f"Process #{len(processes)} started with PID {p.pid}.\n")
+                sys.stdout.flush()
                 time.sleep(delay)
 
     sys.stdout.write(75 * "*")
     sys.stdout.write("\n")
-    sys.stdout.write("All processes were started. Waiting for all processes to finish...\n")
+    sys.stdout.write(f"{len(processes)} processes were started. Waiting for all processes to finish...\n")
     sys.stdout.write(75 * "*")
     sys.stdout.write("\n")
+    sys.stdout.flush()
     while True:
         time.sleep(poll_period)
         ps_status = [p.poll() for p in processes]
@@ -143,3 +147,4 @@ if __name__ == "__main__":
     sys.stdout.write("Finished all jobs.\nThe return codes are:\n")
     for idx, stat in enumerate(ps_status):
         sys.stdout.write(f"Process #{idx}\tPID {processes[idx].pid}:\t{stat}\n")
+    sys.stdout.flush()
