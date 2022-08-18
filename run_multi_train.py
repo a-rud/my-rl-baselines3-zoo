@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", help="Verbose mode (0: no output, 1: INFO)", type=int)
     parser.add_argument("--delay", help="Delay between starting subprocesses in seconds.", type=float, default=10.)
     parser.add_argument("--poll-period", help="Period in seconds between polling subprocesses to check whether they"
-                                              "have finished yet.", type=float, default=10.)
+                                              "have finished yet.", type=float, default=30.)
     args = parser.parse_args()
 
     delay = args.delay
