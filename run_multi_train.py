@@ -20,7 +20,8 @@ if __name__ == "__main__":
     parser.add_argument("--env", type=str, nargs='+', required=True, help="environment ID")
     parser.add_argument("--num-trainings", type=int, default=1, help="Number of training processes to start")
     parser.add_argument("--device", help="PyTorch device to be use (ex: cpu, cuda...)", default="auto", type=str)
-    parser.add_argument("--seed", help="Random generator seed", type=int)
+    parser.add_argument("--seed", help="First random generator seed. Will be incremented for resp. trainings if seed>0",
+                        type=int)
     parser.add_argument("--num-threads", help="Number of threads for PyTorch (-1 to use default)", type=int)
     parser.add_argument("--n-timesteps", help="Overwrite the number of timesteps", type=int)
     parser.add_argument("--log-folder", help="Log folder", type=str)
@@ -38,7 +39,17 @@ if __name__ == "__main__":
                         help="Optional keyword argument to pass to the env constructor")
     parser.add_argument("--study-name", help="Study name for distributed optimization", type=str)
     parser.add_argument("--verbose", help="Verbose mode (0: no output, 1: INFO)", type=int)
+    parser.add_argument("--delay", help="Delay between starting subprocesses in seconds.", type=float, default=10.)
+    parser.add_argument("--poll-period", help="Period in seconds between polling subprocesses to check whether they"
+                                              "have finished yet.", type=float, default=10.)
     args = parser.parse_args()
+
+    delay = args.delay
+    del args.delay
+    poll_period = args.poll_perdiod
+    del args.poll_period
+    assert isinstance(delay, float) and delay > 0, "Delay must be a positive float number."
+    assert isinstance(poll_period, float) and poll_period > 0, "Poll period must be a positive float number."
 
     # Get lists to iterate through
     ALGOS = args.algo
@@ -109,21 +120,21 @@ if __name__ == "__main__":
                     cmd_args.append(arg)
                 cmd_args = list(map(str, cmd_args))
 
-                sys.stdout.write(30 * "+")
+                sys.stdout.write(40 * "+")
                 sys.stdout.write("\n")
                 sys.stdout.write(f"Starting process #{len(processes) + 1} ...\n")
                 p = subprocess.Popen(["python", "train.py"] + cmd_args)
                 processes.append(p)
                 sys.stdout.write(f"Process #{len(processes)} started with PID {p.pid}.\n")
-                time.sleep(10.0)
+                time.sleep(delay)
 
-    sys.stdout.write(60 * "*")
+    sys.stdout.write(75 * "*")
     sys.stdout.write("\n")
     sys.stdout.write("All processes were started. Waiting for all processes to finish...\n")
-    sys.stdout.write(60 * "*")
+    sys.stdout.write(75 * "*")
     sys.stdout.write("\n")
     while True:
-        time.sleep(10.0)
+        time.sleep(poll_period)
         ps_status = [p.poll() for p in processes]
         if all(ps is not None for ps in ps_status):
             break
