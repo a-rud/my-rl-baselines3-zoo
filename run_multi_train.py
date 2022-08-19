@@ -77,7 +77,7 @@ if __name__ == "__main__":
         # otherwise use specified device
         else:
             device = args.device
-    sys.stdout.write(f"Using device '{device}' with {NUM_GPU} GPUs.")
+    sys.stdout.write(f"Using device '{device}' with {NUM_GPU} GPUs.\n")
     sys.stdout.flush()
     # create a list of parsed arguments which are constant for all subprocesses.
     const_args = []
