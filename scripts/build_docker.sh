@@ -1,19 +1,19 @@
 #!/bin/bash
 
-PARENT=arudl/my-stable-baselines3
+PARENT='arudl/my-stable-baselines3'
+PARENT_VERSION='1.6.4'
 
 TAG=arudl/my-rl-baselines3-zoo
 LATEST=latest
 VERSION=$(cat version.txt)  # version of RL Zoo
 
 if [[ ${USE_GPU} == "True" ]]; then
-  PARENT="${PARENT}:${LATEST}"
+  PARENT="${PARENT}:${PARENT_VERSION}"
 else
   LATEST="${LATEST}-cpu"
-  PARENT="${PARENT}:${LATEST}"
-  #TAG="${TAG}-cpu" # tag must always be the same since using only one repo
-  # Mark the images as CPU via versions
   VERSION="${VERSION}-cpu"
+  PARENT_VERSION="${PARENT_VERSION}-cpu"
+  PARENT="${PARENT}:${PARENT_VERSION}"
 fi
 
 echo "docker build --build-arg PARENT_IMAGE=${PARENT} --build-arg USE_GPU=${USE_GPU} --tag ${TAG}:${VERSION} . -f docker/Dockerfile"
