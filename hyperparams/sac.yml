@@ -231,6 +231,24 @@ FetchReach-v1:
   )"
   policy_kwargs: "dict(net_arch=[64, 64])"
 
+######################################################################
+################### SYNERGY CURRICULUM ###############################
+SynergyCurriculum: &synergy-curriculum-defaults
+  env_wrapper:
+    - sb3_contrib.common.wrappers.TimeFeatureWrapper
+    - synergy_curriculum.curriculum.SynergyCurriculum:
+        synergies_file: "/home/adrian/master_ws/sb3-collection/synergy-curriculum/data/default_samples_10000/pca_ee_velocities/pca.npz"
+        num_components: 1
+        schedule_class: "FixedTimestepSchedule"
+        schedule_kwargs:
+          step_timepoints: [ 111,356,500,599,649 ]
+  callback:
+    - synergy_curriculum.callbacks.ApplyZeroMaskToActionBufferCallback:
+        verbose: 0
+    - synergy_curriculum.callbacks.RaiseFlagOnNoModelImprovementCallback:
+        max_no_improvement_evals: 200
+        min_evals: 10
+        verbose: 1
 
 ######################################################################
 ################### EE CONTROL, SPARSE ###############################
