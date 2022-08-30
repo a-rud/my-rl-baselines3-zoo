@@ -213,19 +213,23 @@ FetchPickAndPlace-v1:
 SynergyCurriculum: &synergy-curriculum-defaults
   env_wrapper:
     - sb3_contrib.common.wrappers.TimeFeatureWrapper
-    - synergy_curriculum.curriculum.SynergyCurriculum:
+    - synergy_curriculum.wrappers.ActionProjectionWrapper:
         synergies_file: "/home/adrian/master_ws/sb3-collection/synergy-curriculum/data/default_samples_10000/pca_ee_velocities/pca.npz"
-        num_components: 1
-        schedule_class: "FixedTimestepSchedule"
-        schedule_kwargs:
-          step_timepoints: [ 111,356,500,599,649 ]
+        init_num_components: 1
   callback:
-    - synergy_curriculum.callbacks.ApplyZeroMaskToActionBufferCallback:
-        verbose: 0
-    - synergy_curriculum.callbacks.RaiseFlagOnNoModelImprovementCallback:
-        max_no_improvement_evals: 200
-        min_evals: 10
+    - synergy_curriculum.curriculum.SynergyCurriculum:
         verbose: 1
+        init_num_components: 1
+        trigger_logic_function: builtins.any
+        schedule_class: synergy_curriculum.schedules.FixedTimestepSchedule
+        schedule_kwargs:
+          step_timepoints: [ 60,150,202 ]
+        triggercallback_class: synergy_curriculum.callbacks.RaiseTriggerOnNoModelImprovementCallback
+        triggercallback_kwargs:
+          start_counting_steps: 50
+          max_no_improvement_steps: 100
+          eps: 0.5
+          verbose: 1
 
 ######################################################################
 ################### !!! VERSION 1 !!! ################################
@@ -267,6 +271,7 @@ PandaStack-v1:
 ################### EE CONTROL, SPARSE ###############################
 PandaReach-v2:
   <<: *panda-reach
+  <<: *synergy-curriculum-defaults
 
 PandaPush-v2:
   <<: *her-defaults
@@ -326,7 +331,13 @@ PandaStackJoints-v2:
 ################### JOINT CONTROL, DENSE #############################
 PandaReachJointsDense-v2:
   <<: *panda-reach
-  n_timesteps: !!float 2e5
+  n_timesteps: !!float 50000
+  # Results from optuna tuning:
+  gamma: 0.9
+  learning_rate: 0.0027827992059412873
+  policy_kwargs: "dict(net_arch=[256, 256], n_critics=2)"
+  tau: 0.02
+
 
 PandaPushJointsDense-v2:
   <<: *her-defaults

@@ -3,7 +3,7 @@ stages:
   - test
 
 image:
-  name: arudl/my-rl-baselines3-zoo:1.5.3@sha256:881a600b803c61401f906ebf69497e00749a413a6f3d9afc8115b4fe69ea265a
+  name: arudl/my-rl-baselines3-zoo:1.5.5.1@sha256:c575efff220367feda168a3486104f0c6cbb8945fd8b9799e6df14492916390e
 
 variables:
   PUBLIC: '/Students/a_rudloff/public'
@@ -11,13 +11,13 @@ variables:
   ZOO_DIR: '/root/code/rl_zoo'
   VERSION: 'v2'
   ALGO: 'tqc'
-  TRAINING_ENV: 'PandaReach'
-  N_TIMESTEPS: 10000
-  N_TRAININGS: 4
-  EVAL_FREQ: 500
+  TRAINING_ENV: 'PandaPickAndPlace'
+  N_TIMESTEPS: 100000
+  N_TRAININGS: 10
+  EVAL_FREQ: 100
   EVAL_EPISODES: 100
-  SEED: 2
-  AVG_WINDOW: 400 # Smoothing window over n episodes for plot_train
+  SEED: -1
+  AVG_WINDOW: 50 # Smoothing window over n episodes for plot_train
   # additional arguments for plot_eval and all_plots:
   ADD_ARGS: '--episode-window 10'
 
@@ -47,7 +47,7 @@ training:
     - sleep 1
     - mpstat -P ALL 10 &
     - sleep 11
-    - free --human --seconds 10 &
+    - free --human --mega --wide --seconds 10 &
     - sleep 1
     ###
     - echo "Starting Training..."
@@ -55,8 +55,8 @@ training:
     - SECONDS=0 # Reset timer
     ###
     # ++++++++ TRAINING START ++++++++
-    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings $N_TRAININGS --seed $SEED --n-timesteps $N_TIMESTEPS --eval-freq $EVAL_FREQ --eval-episodes $EVAL_EPISODES --log-folder $LOG_DIR --tensorboard-log $PUBLIC/tensorboard-logs # --device cuda:0
-    #--vec-env dummy --hyperparams n_envs:$N_ENVS gradient_steps:$N_ENVS --num-threads $N_ENVS
+    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings $N_TRAININGS --seed $SEED --n-timesteps $N_TIMESTEPS --eval-freq $EVAL_FREQ --eval-episodes $EVAL_EPISODES --log-folder $LOG_DIR --tensorboard-log $PUBLIC/tensorboard-logs --delay 60.0
+    # --device cuda:0 --vec-env dummy --hyperparams n_envs:$N_ENVS gradient_steps:$N_ENVS --num-threads $N_ENVS
     # ++++++++ TRAINING END ++++++++
     ###
     - DURATION=$SECONDS # Stop timer
@@ -151,3 +151,41 @@ create-figures:
     - touch "${TRAINING_ENV}-${VERSION}${RUN_ID}"
     - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/
     - ls -1A $START_DIR/artifacts
+
+
+hyperparam-search:
+  stage: build
+  tags:
+    - gpu-shared
+  variables:
+    # ID of the run to print. If not specified, the highest-index will be taken
+    NUM_JOBS: 8
+  when: manual
+  script:
+    - START_DIR=$(pwd) && echo $START_DIR
+    - cd ${ZOO_DIR}/
+    - echo "Starting Monitoring..."
+    - nvidia-smi --loop=60 &
+    - sleep 1
+    - nvidia-smi dmon --delay 60 &
+    - sleep 1
+    - mpstat -P ALL 60 &
+    - sleep 11
+    - free --human --mega --wide --seconds 60 &
+    - sleep 1
+    ###
+    - echo "Starting Optuna Hyperparam Search..."
+    - cd $ZOO_DIR/ && ls -1A
+    - SECONDS=0 # Reset timer
+    ###
+    # ++++++++ SEARCH START ++++++++
+    - python3 train.py --algo tqc --env PandaReachJointsDense-v2 --study-name OptunaSearch_ReachJointsDense -optimize --no-optim-plots --sampler tpe --pruner median --verbose 1 --log-folder ${PUBLIC}/optunalogs --n-jobs ${NUM_JOBS} --n-timesteps 15000 --n-trials 100 --eval-episodes 25 --n-evaluations 5
+    # ++++++++ SEARCH END ++++++++
+    ###
+    - DURATION=$SECONDS # Stop timer
+    - echo "Hyperparam search took $(($DURATION / 3600)) hours, $((($DURATION / 60) % 60)) minutes and $(($DURATION % 60)) seconds."
+    - jobs
+    - kill $(jobs -p) # terminate all background jobs
+    - sleep 5
+    - jobs
+    ### END TRAINING
