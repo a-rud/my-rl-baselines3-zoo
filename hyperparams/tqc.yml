@@ -271,7 +271,6 @@ PandaStack-v1:
 ################### EE CONTROL, SPARSE ###############################
 PandaReach-v2:
   <<: *panda-reach
-  <<: *synergy-curriculum-defaults
 
 PandaPush-v2:
   <<: *her-defaults
@@ -282,7 +281,6 @@ PandaSlide-v2:
 
 PandaPickAndPlace-v2:
   <<: *her-defaults
-  <<: *synergy-curriculum-defaults
   n_timesteps: !!float 2e6
 
 PandaStack-v2:
@@ -311,7 +309,7 @@ PandaStackDense-v2:
 ################### JOINT CONTROL, SPARSE ############################
 PandaReachJoints-v2:
   <<: *panda-reach
-  n_timesteps: !!float 2e5
+  n_timesteps: !!float 50000
 
 PandaPushJoints-v2:
   <<: *her-defaults
@@ -332,12 +330,16 @@ PandaStackJoints-v2:
 PandaReachJointsDense-v2:
   <<: *panda-reach
   n_timesteps: !!float 50000
-  # Results from optuna tuning:
-  gamma: 0.9
-  learning_rate: 0.0027827992059412873
-  policy_kwargs: "dict(net_arch=[256, 256], n_critics=2)"
-  tau: 0.02
 
+# Results from Optuna tuning:
+#PandaReachJointsDense-v2:
+#  <<: *panda-reach
+#  n_timesteps: !!float 50000
+#  # Results from optuna tuning:
+#  gamma: 0.9
+#  learning_rate: 0.0027827992059412873
+#  policy_kwargs: "dict(net_arch=[256, 256], n_critics=2)"
+#  tau: 0.02
 
 PandaPushJointsDense-v2:
   <<: *her-defaults
