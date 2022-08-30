@@ -93,12 +93,14 @@ class ExperimentManager:
         n_eval_envs: int = 1,
         no_optim_plots: bool = False,
         device: Union[th.device, str] = "auto",
+        yaml_file: Optional[str] = None,
     ):
         super().__init__()
         self.algo = algo
         self.env_name = EnvironmentName(env_id)
         # Custom params
         self.custom_hyperparams = hyperparams
+        self.yaml_file = yaml_file or f"hyperparams/{self.algo}.yml"
         self.env_kwargs = {} if env_kwargs is None else env_kwargs
         self.n_timesteps = n_timesteps
         self.normalize = False
@@ -266,7 +268,8 @@ class ExperimentManager:
 
     def read_hyperparameters(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         # Load hyperparameters from yaml file
-        with open(f"hyperparams/{self.algo}.yml") as f:
+        print(f"Loading hyperparameters from: {self.yaml_file}")
+        with open(self.yaml_file) as f:
             hyperparams_dict = yaml.safe_load(f)
             if self.env_name.gym_id in list(hyperparams_dict.keys()):
                 hyperparams = hyperparams_dict[self.env_name.gym_id]
@@ -501,12 +504,10 @@ class ExperimentManager:
         elif self.normalize:
             # Copy to avoid changing default values by reference
             local_normalize_kwargs = self.normalize_kwargs.copy()
-            # Do not normalize reward for env used for evaluation
+            # In eval env: turn off reward normalization and normalization stats updates.
             if eval_env:
-                if len(local_normalize_kwargs) > 0:
-                    local_normalize_kwargs["norm_reward"] = False
-                else:
-                    local_normalize_kwargs = {"norm_reward": False}
+                local_normalize_kwargs["norm_reward"] = False
+                local_normalize_kwargs["training"] = False
 
             if self.verbose > 0:
                 if len(local_normalize_kwargs) > 0:
