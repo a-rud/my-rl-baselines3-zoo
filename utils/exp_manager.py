@@ -539,6 +539,14 @@ class ExperimentManager:
         ):
             monitor_kwargs = dict(info_keywords=("is_success",))
 
+        # Special case for Synergy curriculum: log active num components
+        for callback in self.callbacks:
+            if "SynergyCurriculum" in str(callback):
+                if 'reset_keywords' in monitor_kwargs:
+                    monitor_kwargs['reset_keywords'] = ("num_active_components",)  # todo: dont overwrite previous ones
+                else:
+                    monitor_kwargs['reset_keywords'] = ("num_active_components",)
+
         # On most env, SubprocVecEnv does not help and is quite memory hungry
         # therefore we use DummyVecEnv by default
         env = make_vec_env(
