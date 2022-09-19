@@ -22,6 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", help="PyTorch device to be use (ex: cpu, cuda...)", default="auto", type=str)
     parser.add_argument("--seed", help="First random generator seed. Will be incremented for resp. trainings if seed>0",
                         type=int)
+    parser.add_argument("--yaml-file", type=str, default=None,
+                        help="Custom yaml file from which the hyperparameters will be loaded")
     parser.add_argument("--num-threads", help="Number of threads for PyTorch (-1 to use default)", type=int)
     parser.add_argument("--n-timesteps", help="Overwrite the number of timesteps", type=int)
     parser.add_argument("--log-folder", help="Log folder", type=str)
