@@ -6,7 +6,8 @@ import os
 
 import numpy as np
 import seaborn
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 from stable_baselines3.common.monitor import LoadMonitorResultsError, load_results
 from stable_baselines3.common.results_plotter import X_EPISODES, X_TIMESTEPS, X_WALLTIME, ts2xy, window_func
 
@@ -30,6 +31,8 @@ parser.add_argument("--show-all-experiments",
                          "As a default, only the last run is shown.",
                     dest='show_all', default=False, action='store_true')
 parser.add_argument("-s", "--show", help="Flag whether to show plot or not.", default=False, action='store_true')
+parser.add_argument("--plot-active-components", help="Flag whether to try to plot active components.", default=False,
+                    action='store_true')
 
 args = parser.parse_args()
 
@@ -74,10 +77,17 @@ for env in envs:
 if not args.show_all:
     dirs = [sorted(dirs)[-1]]
 
-plt.figure(y_label, figsize=args.figsize)
-plt.title(y_label, fontsize=args.fontsize)
-plt.xlabel(f"{x_label}", fontsize=args.fontsize)
-plt.ylabel(y_label, fontsize=args.fontsize)
+fig = plt.figure(y_label, figsize=args.figsize)
+
+ax1 = fig.add_subplot(1, 1, 1)
+if args.plot_active_components:
+    ax2 = ax1.twinx()
+    max_comp = 3
+
+found_components = False
+fig.suptitle(y_label, fontsize=args.fontsize)
+ax1.set_xlabel(f"{x_label}", fontsize=args.fontsize)
+ax1.set_ylabel(y_label, fontsize=args.fontsize)
 for folder in dirs:
     try:
         data_frame = load_results(folder)
@@ -91,15 +101,34 @@ for folder in dirs:
         print(f"No data available for {folder}")
         continue
     x, _ = ts2xy(data_frame, x_axis)
+    x_comp = x.copy()
+
+    if args.plot_active_components:
+        try:
+            y_comp = np.array(data_frame['num_active_components'])
+            found_components = True
+            ax2.plot(x_comp, y_comp, linewidth=2, color='r', label='active components', zorder=5)
+            this_max = int(max(y_comp))
+            if this_max > max_comp:
+                max_comp = this_max
+        except KeyError:
+            print(f"No num_active_components available for {folder}")
 
     # Do not plot the smoothed curve at all if the timeseries is shorter than window size.
     if x.shape[0] >= args.episode_window:
         # Compute and plot rolling mean with window of size args.episode_window
         x, y_mean = window_func(x, y, args.episode_window, np.mean)
-        plt.plot(x, y_mean, linewidth=2, label=folder.split("/")[-1])
+        ax1.plot(x, y_mean, linewidth=2, label=folder.split("/")[-1], zorder=10)
 
-plt.legend()
-plt.tight_layout()
+if args.plot_active_components and found_components:
+    ticks = range(0, max_comp + 1, 1)
+    ax2.set_yticks(ticks)
+    ax2.set_ylim([0, max_comp + 0.1])
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax2.set_ylabel('number of active action components')
+
+ax1.legend(loc='lower right')
+fig.tight_layout()
 
 store_path = args.target_folder
 if store_path is not None:
