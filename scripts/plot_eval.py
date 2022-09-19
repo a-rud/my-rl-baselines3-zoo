@@ -57,7 +57,7 @@ post_processed_results = {}
 args.algos = [algo.upper() for algo in args.algos]
 
 if args.labels is None:
-    args.labels = ""
+    args.labels = args.exp_folders
 
 y_label = {
     "successes": "Eval Success Rate",

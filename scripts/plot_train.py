@@ -73,16 +73,11 @@ for env in envs:
         ]
     )
 
-# only plot the last experiment
-if not args.show_all:
-    dirs = [sorted(dirs)[-1]]
+dirs = sorted(dirs, reverse=True)
 
 fig = plt.figure(y_label, figsize=args.figsize)
 
 ax1 = fig.add_subplot(1, 1, 1)
-if args.plot_active_components:
-    ax2 = ax1.twinx()
-    max_comp = 3
 
 found_components = False
 fig.suptitle(y_label, fontsize=args.fontsize)
@@ -104,21 +99,31 @@ for folder in dirs:
     x_comp = x.copy()
 
     if args.plot_active_components:
+        comp_load_success = False
         try:
             y_comp = np.array(data_frame['num_active_components'])
+            comp_load_success = True
+        except KeyError:
+            print(f"No num_active_components available for {folder}")
+        if comp_load_success and not found_components:
+            ax2 = ax1.twinx()
+            max_comp = 3
+        if comp_load_success:
             found_components = True
             ax2.plot(x_comp, y_comp, linewidth=2, color='r', label='active components', zorder=5)
             this_max = int(max(y_comp))
             if this_max > max_comp:
                 max_comp = this_max
-        except KeyError:
-            print(f"No num_active_components available for {folder}")
 
     # Do not plot the smoothed curve at all if the timeseries is shorter than window size.
     if x.shape[0] >= args.episode_window:
         # Compute and plot rolling mean with window of size args.episode_window
         x, y_mean = window_func(x, y, args.episode_window, np.mean)
         ax1.plot(x, y_mean, linewidth=2, label=folder.split("/")[-1], zorder=10)
+
+    # only plot the last experiment
+    if not args.show_all:
+        break
 
 if args.plot_active_components and found_components:
     ticks = range(0, max_comp + 1, 1)
