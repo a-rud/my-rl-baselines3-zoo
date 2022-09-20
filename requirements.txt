@@ -18,7 +18,9 @@ sb3-contrib>=1.6.0 # original
 ############ PANDA-GYM ############
 # PIP INSTALL
 #panda-gym==1.1.1 # original - tmp fix: until compatibility with panda-gym v2
-panda-gym==2.0.0 # this release has no gym requires and should be v0.21 compatible
+# panda-gym==2.0.0 # this release has no gym requires and should be v0.21 compatible
+# I made changes, so download from my fork at v2.0.0 tag
+git+https://github.com/a-rud/my-panda-gym@panda-gym-v2.0.0#egg=panda_gym
 #panda-gym==2.0.2 # this release does not require gym<=0.23
 # FOR DOCKER INSTALL
 #git+https://github.com/a-rud/my-panda-gym@my-gym-0.24#egg=panda_gym[extra]
