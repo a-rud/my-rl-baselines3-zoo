@@ -82,7 +82,7 @@ create-figures:
     - gpu-shared
   variables:
     # Name of experiment folder including the algo folder which includes the experiment runs (e.g. PandaReach_mm_dd_hh_mm)
-    EXP_FOLDER=""  # will be set to latest run of that training environment if empty.
+    EXP_FOLDER: ""  # will be set to latest run of that training environment if empty.
   # ID of the run to print. If not specified, the highest-index will be taken
   #    RUN_ID='_2'  # MUST contain the underscore up front
   when: manual
