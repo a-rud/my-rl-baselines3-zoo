@@ -9,5 +9,5 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--env", help="Name of environment.", type=str, required=True)
     args = parser.parse_args()
 
-    folder_name = get_and_create_save_folder(directory=args.log_path, prefix=args.env)
+    save_path, folder_name = get_and_create_save_folder(directory=args.log_path, prefix=args.env)
     sys.stdout.write(f"{folder_name}")

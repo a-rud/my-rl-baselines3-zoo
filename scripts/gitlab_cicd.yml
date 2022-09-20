@@ -3,20 +3,22 @@ stages:
   - test
 
 image:
-  name: arudl/my-rl-baselines3-zoo:1.5.5.1@sha256:c575efff220367feda168a3486104f0c6cbb8945fd8b9799e6df14492916390e
+  name: arudl/my-rl-baselines3-zoo:1.5.6@sha256:4413708029c8010f266503346d0321511a5d7919ce8f2bc557261bbe54587944
 
 variables:
   PUBLIC: '/Students/a_rudloff/public'
   LOG_DIR: '$PUBLIC/logs'
   ZOO_DIR: '/root/code/rl_zoo'
+  SYNCURR_DIR: '/root/code/synergy_curriculum'
   VERSION: 'v2'
   ALGO: 'tqc'
-  TRAINING_ENV: 'PandaPickAndPlace'
-  N_TIMESTEPS: 100000
+  TRAINING_ENV: 'PandaReach'
+  N_TIMESTEPS: -1
   N_TRAININGS: 10
-  EVAL_FREQ: 100
+  EVAL_FREQ: 250
   EVAL_EPISODES: 100
-  SEED: -1
+  N_EVAL_ENS: 10
+  SEED: 20
   AVG_WINDOW: 50 # Smoothing window over n episodes for plot_train
   # additional arguments for plot_eval and all_plots:
   ADD_ARGS: '--episode-window 10'
@@ -37,8 +39,6 @@ training:
     #- echo "Getting Files in place:"
     #- rm -rv $ZOO_DIR/hyperparams/
     #- cp --recursive --verbose hyperparams/ $ZOO_DIR/
-    #- mv utils/ $ZOO_DIR/
-    #- mv train.py $ZOO_DIR/
     ###
     - echo "Starting Monitoring..."
     - nvidia-smi --loop=10 &
@@ -52,11 +52,11 @@ training:
     ###
     - echo "Starting Training..."
     - cd $ZOO_DIR/ && ls -1A
+    - EXP_FOLDER=$(python3 scripts/return_and_create_new_folder.py --log-path ${LOG_DIR} --env ${TRAINING_ENV})
     - SECONDS=0 # Reset timer
     ###
     # ++++++++ TRAINING START ++++++++
-    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings $N_TRAININGS --seed $SEED --n-timesteps $N_TIMESTEPS --eval-freq $EVAL_FREQ --eval-episodes $EVAL_EPISODES --log-folder $LOG_DIR --tensorboard-log $PUBLIC/tensorboard-logs --delay 60.0
-    # --device cuda:0 --vec-env dummy --hyperparams n_envs:$N_ENVS gradient_steps:$N_ENVS --num-threads $N_ENVS
+    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings ${N_TRAININGS} --seed $SEED --n-timesteps ${N_TIMESTEPS} --eval-freq ${EVAL_FREQ} --n-eval-envs ${N_EVAL_ENS} --eval-episodes $EVAL_EPISODES --log-folder ${LOG_DIR}/${EXP_FOLDER} --tensorboard-log $PUBLIC/tensorboard-logs/${EXP_FOLDER} --yaml-file ${START_DIR}/hyperparams/tqc.yml --delay 60.0
     # ++++++++ TRAINING END ++++++++
     ###
     - DURATION=$SECONDS # Stop timer
@@ -67,39 +67,12 @@ training:
     - jobs
     ### END TRAINING
     #
-    ################################################################################################################
-    #
-    ### CREATE-FIGURES (this shall always be a copy of the job "create-figures" below)
+    ### CREATE-FIGURES
     - cd ${ZOO_DIR}/scripts/
-    #
-    ### Get the ID of the latest run
-    - if [[ -z "$RUN_ID" ]]; then RUN_ID=_$(python return_highest_run_id.py --log-path $LOG_DIR/$ALGO --env ${TRAINING_ENV}-${VERSION}); fi
-    - echo "Latest run is ${TRAINING_ENV}-${VERSION}${RUN_ID}"
-    #
-    ### Copy monitor CSV, evaluation and config files of last run
-    - echo "Copying files from last run..."
-    - cp -rv ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/${TRAINING_ENV}-${VERSION} $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/0.monitor.csv $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/evaluations.npz $START_DIR/artifacts
-    #
-    ### Create Training Plots
-    - echo "Creating training plots..."
-    - python plot_train.py -a $ALGO -e ${TRAINING_ENV}-${VERSION}${RUN_ID} -y reward -f $LOG_DIR --target-folder $START_DIR/artifacts --episode-window $AVG_WINDOW
-    - python plot_train.py -a $ALGO -e ${TRAINING_ENV}-${VERSION}${RUN_ID} -y success -f $LOG_DIR --target-folder $START_DIR/artifacts --episode-window $AVG_WINDOW
-    #
-    ### Create Evaluation Plots
-    - echo "Creating evaluation plots..."
-    - python plot_eval.py --algos $ALGO --env $TRAINING_ENV-${VERSION}${RUN_ID} --exp-folders $LOG_DIR --labels "" --key reward --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    - python plot_eval.py --algos $ALGO --env $TRAINING_ENV-${VERSION}${RUN_ID} --exp-folders $LOG_DIR --labels "" --key success --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    #
-    ### Create Plots to compare to other runs
-    - echo "Creating cross-evaluation plots..."
-    - python all_plots.py --algos $ALGO --env $TRAINING_ENV-${VERSION} --exp-folders $LOG_DIR --labels "" --key results --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    - python all_plots.py --algos $ALGO --env $TRAINING_ENV-${VERSION} --exp-folders $LOG_DIR --labels "" --key successes --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    ### List results
+    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args ${ADD_ARGS}
+    ### List and copy results
     - cd $START_DIR/artifacts/
-    - touch "${TRAINING_ENV}-${VERSION}${RUN_ID}"
-    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/
+    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/{EXP_FOLDER}/${ALGO}/
     - ls -1A $START_DIR/artifacts
 
 
@@ -108,8 +81,10 @@ create-figures:
   tags:
     - gpu-shared
   variables:
-    # ID of the run to print. If not specified, the highest-index will be taken
-    #RUN_ID='_2'  # MUST contain the underscore up front
+    # Name of experiment folder including the algo folder which includes the experiment runs (e.g. PandaReach_mm_dd_hh_mm)
+    EXP_FOLDER=""  # will be set to latest run of that training environment if empty.
+  # ID of the run to print. If not specified, the highest-index will be taken
+  #    RUN_ID='_2'  # MUST contain the underscore up front
   when: manual
   #needs:
   #  - training
@@ -122,70 +97,56 @@ create-figures:
     - mkdir artifacts/
     - cd ${ZOO_DIR}/scripts/
     #
-    ### Get the ID of the latest run
-    - if [[ -z "$RUN_ID" ]]; then RUN_ID=_$(python return_highest_run_id.py --log-path $LOG_DIR/$ALGO --env ${TRAINING_ENV}-${VERSION}); fi
-    - echo "Latest run is ${TRAINING_ENV}-${VERSION}${RUN_ID}"
-    #
-    ### Copy monitor CSV, evaluation and config files of last run
-    - echo "Copying files from last run..."
-    - cp -rv ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/${TRAINING_ENV}-${VERSION} $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/0.monitor.csv $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/evaluations.npz $START_DIR/artifacts
-    #
-    ### Create Training Plots
-    - echo "Creating training plots..."
-    - python plot_train.py -a $ALGO -e ${TRAINING_ENV}-${VERSION}${RUN_ID} -y reward -f $LOG_DIR --target-folder $START_DIR/artifacts --episode-window $AVG_WINDOW
-    - python plot_train.py -a $ALGO -e ${TRAINING_ENV}-${VERSION}${RUN_ID} -y success -f $LOG_DIR --target-folder $START_DIR/artifacts --episode-window $AVG_WINDOW
-    #
-    ### Create Evaluation Plots
-    - echo "Creating evaluation plots..."
-    - python plot_eval.py --algos $ALGO --env $TRAINING_ENV-${VERSION}${RUN_ID} --exp-folders $LOG_DIR --labels "" --key reward --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    - python plot_eval.py --algos $ALGO --env $TRAINING_ENV-${VERSION}${RUN_ID} --exp-folders $LOG_DIR --labels "" --key success --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    #
-    ### Create Plots to compare to other runs
-    - echo "Creating cross-evaluation plots..."
-    - python all_plots.py --algos $ALGO --env $TRAINING_ENV-${VERSION} --exp-folders $LOG_DIR --labels "" --key results --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    - python all_plots.py --algos $ALGO --env $TRAINING_ENV-${VERSION} --exp-folders $LOG_DIR --labels "" --key successes --target-folder $START_DIR/artifacts --no-display --print-n-trials --verbose $ADD_ARGS
-    ### List results
+    ### Get the name of the latest experiment folder if variable emtpy
+    - if [[ -z "${EXP_FOLDER}" ]]; then EXP_FOLDER=$(python3 return_latest_experiment_folder.py --log-path ${LOG_DIR} --env ${TRAINING_ENV}); fi
+    - echo "Latest experiment folder is ${EXP_FOLDER}"
+    ### CREATE-FIGURES
+    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args ${ADD_ARGS}
+    ### List and copy results
     - cd $START_DIR/artifacts/
-    - touch "${TRAINING_ENV}-${VERSION}${RUN_ID}"
-    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}${RUN_ID}/
+    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/{EXP_FOLDER}/${ALGO}/
+    #
+    ### Copy monitor CSV, evaluation and config files of ONE exemplary run
+    - echo "Copying monitor CSV, evaluation and config files of ONE run..."
+    - cp -rv ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/${TRAINING_ENV}-${VERSION} $START_DIR/artifacts
+    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/0.monitor.csv $START_DIR/artifacts
+    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/evaluations.npz $START_DIR/artifacts
     - ls -1A $START_DIR/artifacts
 
 
-hyperparam-search:
-  stage: build
-  tags:
-    - gpu-shared
-  variables:
-    # ID of the run to print. If not specified, the highest-index will be taken
-    NUM_JOBS: 8
-  when: manual
-  script:
-    - START_DIR=$(pwd) && echo $START_DIR
-    - cd ${ZOO_DIR}/
-    - echo "Starting Monitoring..."
-    - nvidia-smi --loop=60 &
-    - sleep 1
-    - nvidia-smi dmon --delay 60 &
-    - sleep 1
-    - mpstat -P ALL 60 &
-    - sleep 11
-    - free --human --mega --wide --seconds 60 &
-    - sleep 1
-    ###
-    - echo "Starting Optuna Hyperparam Search..."
-    - cd $ZOO_DIR/ && ls -1A
-    - SECONDS=0 # Reset timer
-    ###
-    # ++++++++ SEARCH START ++++++++
-    - python3 train.py --algo tqc --env PandaReachJointsDense-v2 --study-name OptunaSearch_ReachJointsDense -optimize --no-optim-plots --sampler tpe --pruner median --verbose 1 --log-folder ${PUBLIC}/optunalogs --n-jobs ${NUM_JOBS} --n-timesteps 15000 --n-trials 100 --eval-episodes 25 --n-evaluations 5
-    # ++++++++ SEARCH END ++++++++
-    ###
-    - DURATION=$SECONDS # Stop timer
-    - echo "Hyperparam search took $(($DURATION / 3600)) hours, $((($DURATION / 60) % 60)) minutes and $(($DURATION % 60)) seconds."
-    - jobs
-    - kill $(jobs -p) # terminate all background jobs
-    - sleep 5
-    - jobs
-    ### END TRAINING
+#hyperparam-search-PickAndPlaceJointsDense:
+#  stage: build
+#  tags:
+#    - gpu-shared
+#  variables:
+#    # ID of the run to print. If not specified, the highest-index will be taken
+#    NUM_JOBS: 8
+#  when: manual
+#  script:
+#    - START_DIR=$(pwd) && echo $START_DIR
+#    - cd ${ZOO_DIR}/
+#    - echo "Starting Monitoring..."
+#    - nvidia-smi --loop=60 &
+#    - sleep 1
+#    - nvidia-smi dmon --delay 60 &
+#    - sleep 1
+#    - mpstat -P ALL 60 &
+#    - sleep 11
+#    - free --human --mega --wide --seconds 60 &
+#    - sleep 1
+#    ###
+#    - echo "Starting Optuna Hyperparam Search..."
+#    - cd $ZOO_DIR/ && ls -1A
+#    - SECONDS=0 # Reset timer
+#    ###
+#    # ++++++++ SEARCH START ++++++++
+#    - python3 train.py --algo tqc --env PandaPickAndPlaceJointsDense-v2 --study-name OptunaSearch_PickAndPlaceJointsDense -optimize --no-optim-plots --sampler tpe --pruner median --verbose 1 --log-folder ${PUBLIC}/optunalogs --n-jobs ${NUM_JOBS} --n-timesteps 750000 --n-trials 500 --eval-episodes 25 --n-evaluations 5
+#    # ++++++++ SEARCH END ++++++++
+#    ###
+#    - DURATION=$SECONDS # Stop timer
+#    - echo "Hyperparam search took $(($DURATION / 3600)) hours, $((($DURATION / 60) % 60)) minutes and $(($DURATION % 60)) seconds."
+#    - jobs
+#    - kill $(jobs -p) # terminate all background jobs
+#    - sleep 5
+#    - jobs
+#    ### END TRAINING

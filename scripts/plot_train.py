@@ -25,7 +25,9 @@ parser.add_argument("-x", "--x-axis", help="X-axis", choices=["steps", "episodes
 parser.add_argument("-y", "--y-axis", help="Y-axis", choices=["success", "reward", "length"], type=str,
                     default="reward")
 parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=100)
-parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
+parser.add_argument("-t", "--store_folders", "--store-folder", help="Folder to store figure in.", nargs='*', type=str,
+                    default=None)
+parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Control verbosity")
 parser.add_argument("--show-all-experiments",
                     help="Flag to show graphs for ALL experiments of this algo and experiment. "
                          "As a default, only the last run is shown.",
@@ -135,14 +137,19 @@ if args.plot_active_components and found_components:
 ax1.legend(loc='lower right')
 fig.tight_layout()
 
-store_path = args.target_folder
-if store_path is not None:
-    if os.path.isdir(store_path):
-        figure = os.path.join(store_path, f"training_{args.y_axis}")
-        plt.savefig(figure)
-        print(f"Saved figure {figure}")
-    else:
-        print(f"Target path does not exist: {store_path}")
+store_folders = args.store_folders
+if store_folders is not None and store_folders != 'None':
+    if not isinstance(store_folders, list):
+        store_folders = [store_folders]
+    for store_path in store_folders:
+        if os.path.isdir(store_path):
+            figure = os.path.join(store_path, f"training_{args.y_axis}")
+            plt.savefig(figure)
+            if args.verbose:
+                print(f"Saved figure {figure}")
+        else:
+            if args.verbose:
+                print(f"Target path does not exist: {store_path}")
 
 if args.show:
     plt.show()

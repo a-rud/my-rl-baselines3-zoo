@@ -16,12 +16,11 @@ parser.add_argument("-a", "--algos", help="Algorithms to include", nargs="+", ty
 parser.add_argument("-e", "--env", help="Environments to include", nargs="+", type=str)
 parser.add_argument("-f", "--exp-folders", help="Folders to include", nargs="+", type=str)
 parser.add_argument("-l", "--labels", help="Label for each folder", nargs="+", type=str)
-parser.add_argument("-t", "--target-folder", help="Folder to store figure in.", type=str, default=None)
-parser.add_argument(
-    "-k", "--key", help="Key from the `evaluations.npz` file to use to aggregate results "
-                        "(e.g. reward, success rate, ...), it is 'results' by default (i.e., the episode reward)",
-    default="results", type=str,
-)
+parser.add_argument("-t", "--store-folders", "--store-folder", help="Folder to store figure in.", nargs='*', type=str,
+                    default=None)
+parser.add_argument("-k", "--key", default="results", type=str,
+                    help="Key from the `evaluations.npz` file to use to aggregate results (e.g. reward, success rate, "
+                         "...), it is 'results' by default (i.e., the episode reward)")
 parser.add_argument("-max", "--max-timesteps", help="Max number of timesteps to display", type=int, default=int(3e6))
 parser.add_argument("-min", "--min-timesteps", help="Min number of timesteps to keep a trial", type=int, default=-1)
 parser.add_argument("-w", "--episode-window", help="Rolling window size", type=int, default=None)
@@ -31,7 +30,7 @@ parser.add_argument(
     "-median", "--median", action="store_true", default=False, help="Display median instead of mean in the table"
 )
 parser.add_argument("--no-divider", action="store_true", default=False, help="Do not convert x-axis scale.")
-parser.add_argument("--no-display", action="store_true", default=False, help="Do not show the plots")
+parser.add_argument("-s", "--show", action="store_true", default=False, help="Do not show the plots")
 parser.add_argument(
     "-print", "--print-n-trials", action="store_true", default=False, help="Print the number of trial for each result"
 )
@@ -99,9 +98,7 @@ for env in args.env:  # noqa: C901
                 if (env in d and os.path.isdir(os.path.join(log_path, d)))
             ]
 
-            # only plot the last experiment
-            if not args.show_all:
-                dirs = [sorted(dirs)[-1]]
+            dirs = sorted(dirs, reverse=True)
 
             max_len = 0
             merged_timesteps, merged_results = [], []
@@ -139,6 +136,10 @@ for env in args.env:  # noqa: C901
                     last_eval.append(log[args.key][max_len - 1])
                 else:
                     last_eval.append(log[args.key][-1])
+
+                # only plot the last experiment
+                if not args.show_all:
+                    break
 
             # Merge runs with different eval freq:
             # ex: (100,) eval vs (10,)
@@ -313,16 +314,19 @@ if args.output is not None:
     with open(f"{args.output}.pkl", "wb") as file_handler:
         pickle.dump(post_processed_results, file_handler)
 
-store_path = args.target_folder
-if store_path is not None:
-    if os.path.isdir(store_path):
-        figure = os.path.join(store_path, f"evaluation_{fig_suffix}")
-        plt.savefig(figure)
-        if args.verbose:
-            print(f"Saved figure {figure}")
-    else:
-        if args.verbose:
-            print(f"Target path does not exist: {store_path}")
+store_folders = args.store_folders
+if store_folders is not None and store_folders != 'None':
+    if not isinstance(store_folders, list):
+        store_folders = [store_folders]
+    for store_path in store_folders:
+        if os.path.isdir(store_path):
+            figure = os.path.join(store_path, f"evaluation_{fig_suffix}")
+            plt.savefig(figure)
+            if args.verbose:
+                print(f"Saved figure {figure}")
+        else:
+            if args.verbose:
+                print(f"Target path does not exist: {store_path}")
 
-if not args.no_display:
+if args.show:
     plt.show()
