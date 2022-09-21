@@ -12,21 +12,22 @@ git+https://github.com/a-rud/my-stable-baselines3@master#egg=stable_baselines3[e
 #####################################
 ############ SB3-CONTRIB ############
 # sb3-contrib>=1.6.0 # original
-git+https://github.com/a-rud/my-stable-baselines3-contrib@master#egg=sb3_contrib
 # FOR DOCKER INSTALL
+git+https://github.com/a-rud/my-stable-baselines3-contrib@master#egg=sb3_contrib
 #git+https://github.com/a-rud/my-stable-baselines3-contrib@feat/new-gym-version#egg=sb3_contrib
 ###################################
 ############ PANDA-GYM ############
 # PIP INSTALL
 #panda-gym==1.1.1 # original - tmp fix: until compatibility with panda-gym v2
 # panda-gym==2.0.0 # this release has no gym requires and should be v0.21 compatible
-# I made changes, so download from my fork at v2.0.0 tag
-git+https://github.com/a-rud/my-panda-gym@panda-gym-v2.0.0#egg=panda_gym
 #panda-gym==2.0.2 # this release does not require gym<=0.23
 # FOR DOCKER INSTALL
+# I made changes, so download from my fork at v2.0.0 tag
+git+https://github.com/a-rud/my-panda-gym@panda-gym-v2.0.0#egg=panda_gym
 #git+https://github.com/a-rud/my-panda-gym@my-gym-0.24#egg=panda_gym[extra]
 ##############################
 ############ REST ############
+requests>=2.28
 box2d-py==2.3.8
 pybullet
 gym-minigrid
