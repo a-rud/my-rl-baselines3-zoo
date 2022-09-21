@@ -11,7 +11,8 @@ git+https://github.com/a-rud/my-stable-baselines3@master#egg=stable_baselines3[e
 # git+https://github.com/a-rud/my-stable-baselines3@master-multienv-her#egg=stable_baselines3[extra,tests,docs]
 #####################################
 ############ SB3-CONTRIB ############
-sb3-contrib>=1.6.0 # original
+# sb3-contrib>=1.6.0 # original
+git+https://github.com/a-rud/my-stable-baselines3-contrib@master#egg=stable_baselines3[extra,tests,docs]
 # FOR DOCKER INSTALL
 #git+https://github.com/a-rud/my-stable-baselines3-contrib@feat/new-gym-version#egg=sb3_contrib
 ###################################

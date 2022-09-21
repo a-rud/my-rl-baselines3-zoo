@@ -78,8 +78,8 @@ for env in envs:
 dirs = sorted(dirs, reverse=True)
 
 fig = plt.figure(y_label, figsize=args.figsize)
-
 ax1 = fig.add_subplot(1, 1, 1)
+plt.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
 
 found_components = False
 fig.suptitle(y_label, fontsize=args.fontsize)
