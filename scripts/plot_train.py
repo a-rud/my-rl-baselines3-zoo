@@ -16,6 +16,7 @@ seaborn.set()
 
 parser = argparse.ArgumentParser("Gather results, plot training reward/success")
 parser.add_argument("-a", "--algo", help="Algorithm to include", type=str, required=True)
+parser.add_argument("-l", "--label", help="Label to add to title", type=str, default=None)
 parser.add_argument("-e", "--env", help="Environment(s) to include", nargs="+", type=str, required=True)
 parser.add_argument("-f", "--exp-folder", help="Folders to include", type=str, required=True)
 parser.add_argument("--figsize", help="Figure size, width, height in inches.", nargs=2, type=int, default=[6.4, 4.8])
@@ -41,6 +42,7 @@ args = parser.parse_args()
 algo = args.algo
 envs = args.env
 log_path = os.path.join(args.exp_folder, algo)
+label = f" - {args.label}" if args.label is not None else ""
 
 x_axis = {
     "steps": X_TIMESTEPS,
@@ -82,7 +84,7 @@ ax1 = fig.add_subplot(1, 1, 1)
 plt.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
 
 found_components = False
-fig.suptitle(y_label, fontsize=args.fontsize)
+fig.suptitle(f"{y_label}: {algo.upper()}{label}", fontsize=args.fontsize)
 ax1.set_xlabel(f"{x_label}", fontsize=args.fontsize)
 ax1.set_ylabel(y_label, fontsize=args.fontsize)
 for folder in dirs:

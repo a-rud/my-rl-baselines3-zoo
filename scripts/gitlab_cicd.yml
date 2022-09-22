@@ -3,25 +3,41 @@ stages:
   - test
 
 image:
-  name: arudl/my-rl-baselines3-zoo:1.5.6@sha256:4413708029c8010f266503346d0321511a5d7919ce8f2bc557261bbe54587944
+  name: arudl/rl-sb3-synergy-curriculum:latest@sha256:f2e0712b7a9fddc81daa3531d76a978381f831bc5d51edae2857cfb69df374c9
 
 variables:
+  #
+  ### CONSTANT
   PUBLIC: '/Students/a_rudloff/public'
-  LOG_DIR: '$PUBLIC/logs'
   ZOO_DIR: '/root/code/rl_zoo'
   SYNCURR_DIR: '/root/code/synergy_curriculum'
+  # start_dir gets added in front at runtime
+  HYPERPARAM_FILE: 'hyperparams/tqc.yml'
   VERSION: 'v2'
   ALGO: 'tqc'
-  TRAINING_ENV: 'PandaReach'
   N_TIMESTEPS: -1
-  N_TRAININGS: 10
+  #
+  ### META
+  N_TRAININGS: 4
+  #
+  ### REPORT, TUNING or OTHER LOG? # TODO - CHECK AND UPDATE!!!!!!!
+  SEED: 1000
+  LOG_DIR: '$PUBLIC/tuning_logs'
+  #
+  ### TASK RELATED
+  TRAINING_ENV: 'PandaReach'
+  # One of the following - vanilla / FixedTimestepSchedule / OnThresholdTrigger / OnNoImprovementTrigger
+  CURRICULUM_TYPE: 'FixedTimestepSchedule'
+  #
+  ### ADAPT FOR EACH TASK
+  # Eval
   EVAL_FREQ: 250
   EVAL_EPISODES: 100
   N_EVAL_ENS: 10
-  SEED: 20
-  AVG_WINDOW: 50 # Smoothing window over n episodes for plot_train
-  # additional arguments for plot_eval and all_plots:
-  ADD_ARGS: '--episode-window 10'
+  # Smoothing window over n episodes for plot_train.py
+  AVG_WINDOW: 25
+  # additional arguments for plot_eval.py and all_plots.py:
+  ADD_ARGS: '--episode-window 4'
 
 training:
   stage: build
@@ -41,22 +57,23 @@ training:
     #- cp --recursive --verbose hyperparams/ $ZOO_DIR/
     ###
     - echo "Starting Monitoring..."
-    - nvidia-smi --loop=10 &
+    - nvidia-smi --loop=60 &
     - sleep 1
-    - nvidia-smi dmon --delay 10 &
+    - nvidia-smi dmon --delay 60 &
     - sleep 1
-    - mpstat -P ALL 10 &
+    - mpstat -P ALL 60 &
     - sleep 11
-    - free --human --mega --wide --seconds 10 &
+    - free --human --mega --wide --seconds 60 &
     - sleep 1
     ###
     - echo "Starting Training..."
     - cd $ZOO_DIR/ && ls -1A
     - EXP_FOLDER=$(python3 scripts/return_and_create_new_folder.py --log-path ${LOG_DIR} --env ${TRAINING_ENV})
+    - HYPERPARAM_FILE=${START_DIR}/${HYPERPARAM_FILE}
     - SECONDS=0 # Reset timer
     ###
     # ++++++++ TRAINING START ++++++++
-    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings ${N_TRAININGS} --seed $SEED --n-timesteps ${N_TIMESTEPS} --eval-freq ${EVAL_FREQ} --n-eval-envs ${N_EVAL_ENS} --eval-episodes $EVAL_EPISODES --log-folder ${LOG_DIR}/${EXP_FOLDER} --tensorboard-log $PUBLIC/tensorboard-logs/${EXP_FOLDER} --yaml-file ${START_DIR}/hyperparams/tqc.yml --delay 60.0
+    - python3 run_multi_train.py --algo $ALGO --env ${TRAINING_ENV}-${VERSION} --num-trainings ${N_TRAININGS} --seed $SEED --n-timesteps ${N_TIMESTEPS} --eval-freq ${EVAL_FREQ} --n-eval-envs ${N_EVAL_ENS} --eval-episodes $EVAL_EPISODES --log-folder ${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER} --tensorboard-log $PUBLIC/tensorboard-logs/${EXP_FOLDER} --yaml-file ${HYPERPARAM_FILE} --delay 60.0
     # ++++++++ TRAINING END ++++++++
     ###
     - DURATION=$SECONDS # Stop timer
@@ -69,49 +86,69 @@ training:
     #
     ### CREATE-FIGURES
     - cd ${ZOO_DIR}/scripts/
-    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args ${ADD_ARGS}
+    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args "${ADD_ARGS}"
     ### List and copy results
     - cd $START_DIR/artifacts/
-    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/{EXP_FOLDER}/${ALGO}/
-    - ls -1A $START_DIR/artifacts
-
-
-create-figures:
-  stage: test
-  tags:
-    - gpu-shared
-  variables:
-    # Name of experiment folder including the algo folder which includes the experiment runs (e.g. PandaReach_mm_dd_hh_mm)
-    EXP_FOLDER: ""  # will be set to latest run of that training environment if empty.
-  # ID of the run to print. If not specified, the highest-index will be taken
-  #    RUN_ID='_2'  # MUST contain the underscore up front
-  when: manual
-  #needs:
-  #  - training
-  artifacts:
-    paths:
-      - artifacts/
-    expire_in: 1 week
-  script:
-    - START_DIR=$(pwd) && echo $START_DIR
-    - mkdir artifacts/
-    - cd ${ZOO_DIR}/scripts/
-    #
-    ### Get the name of the latest experiment folder if variable emtpy
-    - if [[ -z "${EXP_FOLDER}" ]]; then EXP_FOLDER=$(python3 return_latest_experiment_folder.py --log-path ${LOG_DIR} --env ${TRAINING_ENV}); fi
-    - echo "Latest experiment folder is ${EXP_FOLDER}"
-    ### CREATE-FIGURES
-    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args ${ADD_ARGS}
-    ### List and copy results
-    - cd $START_DIR/artifacts/
-    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/{EXP_FOLDER}/${ALGO}/
+    - touch ${EXP_FOLDER}
+    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/
     #
     ### Copy monitor CSV, evaluation and config files of ONE exemplary run
-    - echo "Copying monitor CSV, evaluation and config files of ONE run..."
-    - cp -rv ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/${TRAINING_ENV}-${VERSION} $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/0.monitor.csv $START_DIR/artifacts
-    - cp --verbose ${LOG_DIR}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/evaluations.npz $START_DIR/artifacts
+    - echo "Copying monitor CSV, evaluation and config files of ONE run (only if they exist)..."
+    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/${TRAINING_ENV}-${VERSION}
+    - if [ -d "$FILE" ]; then cp -rv $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/0.monitor.csv
+    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/evaluations.npz
+    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/synergycurriculum_info.yml
+    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+    #
     - ls -1A $START_DIR/artifacts
+
+
+#create-figures:
+#  stage: test
+#  tags:
+#    - gpu-shared
+#  variables:
+#    # Name of experiment folder including the algo folder which includes the experiment runs (e.g. PandaReach_mm_dd_hh_mm)
+#    EXP_FOLDER: ""  # will be set to latest run of that training environment if empty.
+#  # ID of the run to print. If not specified, the highest-index will be taken
+#  #    RUN_ID='_2'  # MUST contain the underscore up front
+#  when: manual
+#  #needs:
+#  #  - training
+#  artifacts:
+#    paths:
+#      - artifacts/
+#    expire_in: 1 week
+#  script:
+#    - START_DIR=$(pwd) && echo $START_DIR
+#    - mkdir artifacts/
+#    #
+#    - cd ${ZOO_DIR}/scripts/
+#    ### Get the name of the latest experiment folder if variable emtpy
+#    - if [[ -z "${EXP_FOLDER}" ]]; then EXP_FOLDER=$(python3 return_latest_experiment_folder.py --log-path ${LOG_DIR} --env ${TRAINING_ENV}); fi
+#    - echo "Latest experiment folder is ${EXP_FOLDER}"
+#    ### CREATE-FIGURES
+#    - python3 create_figures.py --zoo-dir ${ZOO_DIR} --log-dir ${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER} --store-dir ${START_DIR}/artifacts/ --algo $ALGO --training-env ${TRAINING_ENV} --version $VERSION --avg-window $AVG_WINDOW --add-args "${ADD_ARGS}"
+#    ### List and copy results
+#    - cd $START_DIR/artifacts/
+#    - touch ${EXP_FOLDER}
+#    - cp -vr $START_DIR/artifacts/ ${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/
+#    #
+#    ### Copy monitor CSV, evaluation and config files of ONE exemplary run
+#    - echo "Copying monitor CSV, evaluation and config files of ONE run (only if they exist)..."
+#    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/${TRAINING_ENV}-${VERSION}
+#    - if [ -d "$FILE" ]; then cp -rv $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+#    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/0.monitor.csv
+#    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+#    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/evaluations.npz
+#    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+#    - FILE=${LOG_DIR}/${TRAINING_ENV}/${CURRICULUM_TYPE}/${EXP_FOLDER}/${ALGO}/${TRAINING_ENV}-${VERSION}_1/synergycurriculum_info.yml
+#    - if [ -f "$FILE" ]; then cp -v $FILE $START_DIR/artifacts; else echo "$FILE does not exist. Continuing."; fi
+#    #
+#    - ls -1A $START_DIR/artifacts
 
 
 #hyperparam-search-PickAndPlaceJointsDense:
