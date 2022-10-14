@@ -94,15 +94,15 @@ def main():  # noqa: C901
         else:
             print("Pretrained model not found, trying to download it from sb3 Huggingface hub: https://huggingface.co/sb3")
             # Auto-download
-            download_from_hub(
-                algo=algo,
-                env_name=env_name,
-                exp_id=args.exp_id,
-                folder=folder,
-                organization="sb3",
-                repo_name=None,
-                force=False,
-            )
+            # download_from_hub(
+            #     algo=algo,
+            #     env_name=env_name,
+            #     exp_id=args.exp_id,
+            #     folder=folder,
+            #     organization="sb3",
+            #     repo_name=None,
+            #     force=False,
+            # )
             # Try again
             _, model_path, log_path = get_model_path(
                 args.exp_id,

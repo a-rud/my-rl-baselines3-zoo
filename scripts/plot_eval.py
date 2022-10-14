@@ -49,7 +49,7 @@ elif "length" in args.key:
     args.key = "ep_lengths"
 
 # Activate seaborn
-seaborn.set()
+seaborn.set(context="paper")
 results = {}
 post_processed_results = {}
 
