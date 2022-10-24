@@ -8,19 +8,21 @@ import torch as th
 import yaml
 from huggingface_sb3 import EnvironmentName
 from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, ConvertCallback
 
 import utils.import_envs  # noqa: F401 pylint: disable=unused-import
 from utils import ALGOS, create_test_env, get_saved_hyperparams
 from utils.exp_manager import ExperimentManager
 from utils.load_from_hub import download_from_hub
-from utils.utils import StoreDict, get_model_path
+from utils.utils import StoreDict, get_model_path, get_callback_list
 
 
 def main():  # noqa: C901
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", help="environment ID", type=EnvironmentName, default="CartPole-v1")
     parser.add_argument("-f", "--folder", help="Log folder", type=str, default="rl-trained-agents")
-    parser.add_argument("--algo", help="RL Algorithm", default="ppo", type=str, required=False, choices=list(ALGOS.keys()))
+    parser.add_argument("--algo", help="RL Algorithm", default="ppo", type=str, required=False,
+                        choices=list(ALGOS.keys()))
     parser.add_argument("-n", "--n-timesteps", help="number of timesteps", default=1000, type=int)
     parser.add_argument("--num-threads", help="Number of threads for PyTorch (-1 to use default)", default=-1, type=int)
     parser.add_argument("--n-envs", help="number of environments", default=1, type=int)
@@ -38,7 +40,7 @@ def main():  # noqa: C901
         "--load-checkpoint",
         type=int,
         help="Load checkpoint instead of last model if available, "
-        "you must pass the number of timesteps corresponding to it",
+             "you must pass the number of timesteps corresponding to it",
     )
     parser.add_argument(
         "--load-last-checkpoint",
@@ -48,7 +50,8 @@ def main():  # noqa: C901
     )
     parser.add_argument("--stochastic", action="store_true", default=False, help="Use stochastic actions")
     parser.add_argument(
-        "--norm-reward", action="store_true", default=False, help="Normalize reward if applicable (trained with VecNormalize)"
+        "--norm-reward", action="store_true", default=False,
+        help="Normalize reward if applicable (trained with VecNormalize)"
     )
     parser.add_argument("--seed", help="Random generator seed", type=int, default=0)
     parser.add_argument("--reward-log", help="Where to log reward", default="", type=str)
@@ -60,7 +63,8 @@ def main():  # noqa: C901
         help="Additional external Gym environment package modules to import (e.g. gym_minigrid)",
     )
     parser.add_argument(
-        "--env-kwargs", type=str, nargs="+", action=StoreDict, help="Optional keyword argument to pass to the env constructor"
+        "--env-kwargs", type=str, nargs="+", action=StoreDict,
+        help="Optional keyword argument to pass to the env constructor"
     )
     parser.add_argument(
         "--custom-objects", action="store_true", default=False, help="Use custom objects to solve loading issues"
@@ -92,7 +96,8 @@ def main():  # noqa: C901
         if "rl-trained-agents" not in folder:
             raise e
         else:
-            print("Pretrained model not found, trying to download it from sb3 Huggingface hub: https://huggingface.co/sb3")
+            print(
+                "Pretrained model not found, trying to download it from sb3 Huggingface hub: https://huggingface.co/sb3")
             # Auto-download
             # download_from_hub(
             #     algo=algo,
@@ -182,6 +187,17 @@ def main():  # noqa: C901
         }
 
     model = ALGOS[algo].load(model_path, env=env, custom_objects=custom_objects, device=args.device, **kwargs)
+
+    # Additionally, initialize callbacks. This is basically following the base_class._init_callback() function.
+    callbacks = get_callback_list(hyperparams)
+    # Convert a list of callbacks into a callback
+    if isinstance(callbacks, list):
+        callbacks = CallbackList(callbacks)
+    # Convert functional callback to object
+    if not isinstance(callbacks, BaseCallback):
+        callbacks = ConvertCallback(callbacks)
+    callbacks.init_callback(model=model)
+    callbacks.on_training_start(locals(), globals())
 
     obs = env.reset()
 
