@@ -22,6 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", help="PyTorch device to be use (ex: cpu, cuda...)", default="auto", type=str)
     parser.add_argument("--seed", help="First random generator seed. Will be incremented for resp. trainings if seed>0",
                         type=int)
+    parser.add_argument("--seed-offset", type=int, default=1,
+                        help="Offset between seeds. Seeds are generated like this: seed_i = seed + i*seed_offset")
     parser.add_argument("--yaml-file", type=str, default=None,
                         help="Custom yaml file from which the hyperparameters will be loaded")
     parser.add_argument("--num-threads", help="Number of threads for PyTorch (-1 to use default)", type=int)
@@ -62,10 +64,12 @@ if __name__ == "__main__":
         ENVS = [ENVS]
     assert args.num_trainings > 0, "At least one training must be started."
     SEEDS = []
+    seed_offset = max(1, args.seed_offset)
+    del args.seed_offset
     if args.seed is None:
         SEEDS = [-1 for _ in range(args.num_trainings)]
     else:
-        SEEDS = [args.seed + i for i in range(args.num_trainings)]
+        SEEDS = [int(args.seed + i * seed_offset) for i in range(args.num_trainings)]
 
     # Determine device
     NUM_GPU = 0

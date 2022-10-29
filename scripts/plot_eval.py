@@ -73,10 +73,9 @@ for env in args.env:  # noqa: C901
     plt.figure(f"Results {env}")
     plt.title(f"{env}", fontsize=14)
 
-    x_label_suffix = ""  # if args.no_million else "(in Million)"
     if not args.no_divider:
         plt.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
-    plt.xlabel(f"Timesteps {x_label_suffix}", fontsize=14)
+    plt.xlabel(f"Timesteps t", fontsize=14)
     plt.ylabel(y_label, fontsize=14)
     results[env] = {}
     post_processed_results[env] = {}
