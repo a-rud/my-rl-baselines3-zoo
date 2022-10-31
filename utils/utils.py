@@ -184,6 +184,7 @@ def create_test_env(
     should_render: bool = True,
     hyperparams: Optional[Dict[str, Any]] = None,
     env_kwargs: Optional[Dict[str, Any]] = None,
+    checkpoint_number: Optional[str] = None,
 ) -> VecEnv:
     """
     Create environment for testing a trained agent
@@ -196,6 +197,7 @@ def create_test_env(
     :param should_render: For Pybullet env, display the GUI
     :param hyperparams: Additional hyperparams (ex: n_stack)
     :param env_kwargs: Optional keyword argument to pass to the env constructor
+    :param checkpoint_number: Optional, number of checkpoint to load pickle file from
     :return:
     """
     # Avoid circular import
@@ -238,9 +240,16 @@ def create_test_env(
     # And optionally stack frames
     if stats_path is not None:
         if hyperparams["normalize"]:
-            print("Loading running average")
+            if checkpoint_number is None:
+                vecnormalize_file = "vecnormalize.pkl"
+            else:
+                vecnormalize_file = f"vecnormalize_{checkpoint_number}_steps.pkl"
+                if not os.path.exists(os.path.join(stats_path, vecnormalize_file)):
+                    print(f"Checkpoint vecnormalize file does not exist. Using default one.")
+                    vecnormalize_file = "vecnormalize.pkl"
+            path_ = os.path.join(stats_path, vecnormalize_file)
+            print(f"Loading running average from {path_}")
             print(f"with params: {hyperparams['normalize_kwargs']}")
-            path_ = os.path.join(stats_path, "vecnormalize.pkl")
             if os.path.exists(path_):
                 env = VecNormalize.load(path_, env)
                 # Deactivate training and reward normalization

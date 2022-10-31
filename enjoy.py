@@ -162,6 +162,7 @@ def main():  # noqa: C901
         should_render=not args.no_render,
         hyperparams=hyperparams,
         env_kwargs=env_kwargs,
+        checkpoint_number=args.load_checkpoint,
     )
 
     kwargs = dict(seed=args.seed)
