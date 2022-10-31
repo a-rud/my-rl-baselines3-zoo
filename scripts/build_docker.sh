@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PARENT='arudl/my-stable-baselines3'
-PARENT_VERSION='1.6.6'
+PARENT_VERSION='1.6.7'
 
 TAG=arudl/my-rl-baselines3-zoo
 LATEST=latest
