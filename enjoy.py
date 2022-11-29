@@ -200,6 +200,17 @@ def main():  # noqa: C901
     callbacks.init_callback(model=model)
     callbacks.on_training_start(locals(), globals())
 
+    # try change viewing camera pose
+    try:
+        default_view = {'target_position': np.array([0., 0., 0.]), 'distance': 0.9, 'yaw': 45, 'pitch': -30}
+        angle_view = {'target_position': np.array([0., 0., 0.25]), 'distance': 0.5, 'yaw': 45, 'pitch': -20}
+        front_view = {'target_position': np.array([0., 0., 0.25]), 'distance': 0.4, 'yaw': 90, 'pitch': -10}
+        side_view = {'target_position': np.array([-0.2, 0., 0.35]), 'distance': 0.5, 'yaw': 0, 'pitch': -10}
+        with env.unwrapped.envs[0].unwrapped.task.sim.no_rendering():
+            env.unwrapped.envs[0].unwrapped.task.sim.place_visualizer(**side_view)
+    except:
+        pass
+
     obs = env.reset()
 
     # Deterministic by default except for atari games
@@ -209,18 +220,30 @@ def main():  # noqa: C901
     episode_reward = 0.0
     episode_rewards, episode_lengths = [], []
     ep_len = 0
+    n_episodes = -1  # start counting at -1 because it gets incremented at first loop
+    episode_length = 50
     # For HER, monitor success rate
     successes = []
     lstm_states = None
     episode_start = np.ones((env.num_envs,), dtype=bool)
     try:
-        for _ in range(args.n_timesteps):
+        for n in range(args.n_timesteps):
+            # episode counter
+            if n % episode_length == 0:
+                n_episodes += 1
+
             action, lstm_states = model.predict(
                 obs,
                 state=lstm_states,
                 episode_start=episode_start,
                 deterministic=deterministic,
             )
+            # break points for videos:
+            cycle_length = 11  # number of episodes in one cycle
+            cycle_end = (episode_length - 1)
+            # cycle_end = 99
+            if n % (cycle_length * episode_length) == cycle_end:
+                print("cycle start")
             obs, reward, done, infos = env.step(action)
 
             episode_start = done
@@ -252,7 +275,7 @@ def main():  # noqa: C901
 
                 # Reset also when the goal is achieved when using HER
                 if done and infos[0].get("is_success") is not None:
-                    if args.verbose > 1:
+                    if args.verbose > 0:
                         print("Success?", infos[0].get("is_success", False))
 
                     if infos[0].get("is_success") is not None:
